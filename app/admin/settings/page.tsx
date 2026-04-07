@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { useBrandStore } from "@/lib/brand-store"
 import type { BrandOverrides } from "@/lib/brand-store"
 import { brand as D } from "@/brand.config"
-import { Save, RotateCcw, Upload, ImageOff, CheckCircle, RefreshCw } from "lucide-react"
+import { Save, RotateCcw, Upload, ImageOff, CheckCircle, RefreshCw, Download, FolderOpen } from "lucide-react"
 
 // ─────────────────────────────────────────────────────────────
 // Field helper — MUST be outside the page component so React
@@ -40,6 +40,7 @@ export default function SettingsPage() {
   const [confirmReset, setConfirmReset] = useState(false)
   const logoRef = useRef<HTMLInputElement>(null)
   const heroImgRef = useRef<HTMLInputElement>(null)
+  const importRef = useRef<HTMLInputElement>(null)
 
   // ── form state ───────────────────────────────────────────
   const [company, setCompany] = useState(overrides.company ?? D.company)
@@ -162,6 +163,49 @@ export default function SettingsPage() {
     r.readAsDataURL(file); e.target.value = ""
   }
 
+  // ── export / import ──────────────────────────────────────
+  function handleExport() {
+    const current: BrandOverrides = {
+      company, tagline, logoText,
+      ...(logoImage !== undefined ? { logoImage } : {}),
+      navBgColor, navTextColor,
+      primaryColor, accentColor,
+      ...(heroBgImage !== undefined ? { heroBgImage } : {}),
+      heroBgPosition, heroBgZoom,
+      heroBgOverlay, heroGradientFrom, heroGradientTo,
+      heroHeading, heroSubheading,
+      heroCta1Text, heroCta1Url, heroCta1Color,
+      heroCta2Text, heroCta2Url,
+      trustBadge1, trustBadge2, trustBadge3, trustBadge4,
+      catSectionHeading, catSectionSubheading,
+      featuredSectionHeading, featuredSectionSubheading,
+      enterpriseHeading, enterpriseBody, enterpriseCtaText,
+    }
+    const blob = new Blob([JSON.stringify(current, null, 2)], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `brand-settings-${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target?.result as string) as BrandOverrides
+        save(data) // saves to context + localStorage, triggers full re-sync via useEffect([overrides])
+      } catch {
+        alert("Couldn't read that file — make sure it's a brand settings JSON exported from this tool.")
+      }
+    }
+    reader.readAsText(file)
+    e.target.value = ""
+  }
+
   // ── save ─────────────────────────────────────────────────
   function handleSave() {
     const u: BrandOverrides = {
@@ -191,12 +235,26 @@ export default function SettingsPage() {
           <h1 className="text-2xl font-black text-gray-900">Brand Settings</h1>
           <p className="text-gray-500 text-sm mt-0.5">Changes apply to the storefront immediately after saving</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-gray-500 border border-gray-200 hover:bg-gray-50 transition-colors"
+            title="Download all settings as JSON — re-import on any domain"
+          >
+            <Download size={14} /> Export
+          </button>
+          <button
+            onClick={() => importRef.current?.click()}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-gray-500 border border-gray-200 hover:bg-gray-50 transition-colors"
+            title="Load a previously exported settings file"
+          >
+            <FolderOpen size={14} /> Import
+          </button>
           <button
             onClick={() => setConfirmReset(true)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-gray-500 border border-gray-200 hover:bg-gray-50 transition-colors"
           >
-            <RotateCcw size={14} /> Reset to defaults
+            <RotateCcw size={14} /> Reset
           </button>
           <button
             onClick={handleSave}
@@ -207,6 +265,7 @@ export default function SettingsPage() {
             {saved ? "Saved!" : "Save Changes"}
           </button>
         </div>
+        <input ref={importRef} type="file" accept="application/json,.json" onChange={handleImportFile} className="hidden" />
       </div>
 
       {confirmReset && (
