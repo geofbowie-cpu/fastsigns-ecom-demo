@@ -12,11 +12,30 @@ export default function ProductCard({ product }: { product: Product }) {
       {/* Product visual */}
       <div
         className="h-44 flex flex-col items-center justify-center relative overflow-hidden"
-        style={{
+        style={product.imageUrl ? {} : {
           background: `linear-gradient(135deg, ${product.gradientFrom}, ${product.gradientTo})`,
         }}
       >
-        <span className="text-5xl mb-2 drop-shadow-sm">{product.icon}</span>
+        {product.imageUrl ? (
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            className="w-full h-full object-cover"
+            style={{
+              objectPosition: product.imagePosition
+                ? `${product.imagePosition.x}% ${product.imagePosition.y}%`
+                : undefined,
+              transform: product.imageZoom && product.imageZoom !== 1
+                ? `scale(${product.imageZoom})`
+                : undefined,
+              transformOrigin: product.imagePosition
+                ? `${product.imagePosition.x}% ${product.imagePosition.y}%`
+                : undefined,
+            }}
+          />
+        ) : (
+          <span className="text-5xl mb-2 drop-shadow-sm">{product.icon}</span>
+        )}
         {product.featured && (
           <span
             className="absolute top-3 right-3 text-xs font-bold px-2 py-0.5 rounded-full"

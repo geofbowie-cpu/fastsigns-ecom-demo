@@ -3,7 +3,8 @@
 import { useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { products, categories, brand } from "@/brand.config"
+import { categories, brand } from "@/brand.config"
+import { useProductStore } from "@/lib/product-store"
 import { useCart } from "@/lib/cart-context"
 import ProductCard from "@/components/ProductCard"
 import { ChevronRight, ShoppingCart, Clock, CheckCircle, Minus, Plus } from "lucide-react"
@@ -12,6 +13,7 @@ export default function ProductDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { addItem } = useCart()
+  const { products } = useProductStore()
 
   const product = products.find((p) => p.slug === params.slug)
 
@@ -68,13 +70,34 @@ export default function ProductDetailPage() {
         {/* Product visual */}
         <div>
           <div
-            className="w-full aspect-[4/3] rounded-2xl flex flex-col items-center justify-center shadow-lg"
-            style={{
+            className="w-full aspect-[4/3] rounded-2xl flex flex-col items-center justify-center shadow-lg overflow-hidden"
+            style={product.imageUrl ? {} : {
               background: `linear-gradient(135deg, ${product.gradientFrom}, ${product.gradientTo})`,
             }}
           >
-            <span className="text-[80px] drop-shadow-md">{product.icon}</span>
-            <span className="text-white/60 text-sm mt-3 font-medium">{category?.name}</span>
+            {product.imageUrl ? (
+              <img
+                src={product.imageUrl}
+                alt={product.name}
+                className="w-full h-full object-cover"
+                style={{
+                  objectPosition: product.imagePosition
+                    ? `${product.imagePosition.x}% ${product.imagePosition.y}%`
+                    : undefined,
+                  transform: product.imageZoom && product.imageZoom !== 1
+                    ? `scale(${product.imageZoom})`
+                    : undefined,
+                  transformOrigin: product.imagePosition
+                    ? `${product.imagePosition.x}% ${product.imagePosition.y}%`
+                    : undefined,
+                }}
+              />
+            ) : (
+              <>
+                <span className="text-[80px] drop-shadow-md">{product.icon}</span>
+                <span className="text-white/60 text-sm mt-3 font-medium">{category?.name}</span>
+              </>
+            )}
           </div>
 
           {/* Tags */}

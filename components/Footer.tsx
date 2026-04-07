@@ -1,16 +1,25 @@
+"use client"
+
 import Link from "next/link"
-import { brand, categories } from "@/brand.config"
+import { useBrandStore } from "@/lib/brand-store"
+import { categories } from "@/brand.config"
 
 export default function Footer() {
+  const { brand } = useBrandStore()
+
   return (
     <footer className="bg-gray-900 text-gray-400 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Brand */}
           <div>
-            <div className="text-white font-black text-lg tracking-widest mb-2">
-              {brand.logoText}
-            </div>
+            {brand.logoImage ? (
+              <img src={brand.logoImage} alt={brand.company} className="h-8 w-auto mb-2 brightness-0 invert" />
+            ) : (
+              <div className="text-white font-black text-lg tracking-widest mb-2">
+                {brand.logoText}
+              </div>
+            )}
             <p className="text-sm leading-relaxed mb-4">{brand.tagline}</p>
             <p className="text-xs text-gray-500">{brand.footerTagline}</p>
             {brand.procurementSystem && (

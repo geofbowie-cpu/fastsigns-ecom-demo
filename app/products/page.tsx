@@ -3,13 +3,15 @@
 import { useState, useMemo } from "react"
 import { useSearchParams } from "next/navigation"
 import { Suspense } from "react"
-import { products, categories, brand } from "@/brand.config"
+import { categories, brand } from "@/brand.config"
+import { useProductStore } from "@/lib/product-store"
 import ProductCard from "@/components/ProductCard"
 import { Search, SlidersHorizontal, X } from "lucide-react"
 
 function ProductsContent() {
   const searchParams = useSearchParams()
   const initialCategory = searchParams.get("category") || ""
+  const { products } = useProductStore()
 
   const [search, setSearch] = useState("")
   const [selectedCategory, setSelectedCategory] = useState(initialCategory)

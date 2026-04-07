@@ -3,9 +3,9 @@
 // ============================================================
 
 export const brand = {
-  company: "Nexus Global",
+  company: "Visual Solutions Group",
   tagline: "Enterprise Signage & Branded Products",
-  logoText: "NEXUS", // shown when no logo image
+  logoText: "VSG", // shown when no logo image
   logoImage: null as string | null, // e.g. "/logo.png"
   primaryColor: "#1e3a5f",        // brand primary (nav, buttons, hero)
   primaryDark: "#152a47",         // darker shade for gradients
@@ -37,6 +37,9 @@ export const brand = {
   // Footer
   footerTagline: "Powered by FASTSIGNS Enterprise",
   supportEmail: "support@fastsigns.com",
+  // Admin
+  adminEmail: "admin@visualsolutionsgroup.com",
+  adminPassword: "demo2024",
 }
 
 // ============================================================
@@ -59,6 +62,10 @@ export type Product = {
   featured: boolean
   tags: string[]
   leadTime: string
+  sku?: string
+  imageUrl?: string
+  imagePosition?: { x: number; y: number }
+  imageZoom?: number
 }
 
 export const categories = [

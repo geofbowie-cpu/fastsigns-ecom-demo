@@ -1,8 +1,7 @@
 import type { Metadata } from "next"
 import "./globals.css"
 import { Providers } from "./providers"
-import Nav from "@/components/Nav"
-import Footer from "@/components/Footer"
+import { ConditionalShell } from "./ConditionalShell"
 import { brand } from "@/brand.config"
 
 export const metadata: Metadata = {
@@ -15,9 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className="flex flex-col min-h-screen bg-gray-50">
         <Providers>
-          <Nav />
-          <main className="flex-1">{children}</main>
-          <Footer />
+          <ConditionalShell>{children}</ConditionalShell>
         </Providers>
       </body>
     </html>
