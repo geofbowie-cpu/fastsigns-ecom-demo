@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { useBrandStore } from "@/lib/brand-store"
 import type { BrandOverrides } from "@/lib/brand-store"
 import { brand as D } from "@/brand.config"
@@ -54,9 +54,38 @@ export default function SettingsPage() {
   const [accentColor, setAccentColor] = useState(overrides.accentColor ?? D.accentColor)
 
   const [heroBgImage, setHeroBgImage] = useState<string | null | undefined>(overrides.heroBgImage)
+  const [heroBgPosition, setHeroBgPosition] = useState(overrides.heroBgPosition ?? { x: 50, y: 50 })
+  const [heroBgZoom, setHeroBgZoom] = useState(overrides.heroBgZoom ?? 1)
   const [heroBgOverlay, setHeroBgOverlay] = useState(overrides.heroBgOverlay ?? 0.5)
   const [heroGradientFrom, setHeroGradientFrom] = useState(overrides.heroGradientFrom ?? D.primaryDark)
   const [heroGradientTo, setHeroGradientTo] = useState(overrides.heroGradientTo ?? D.primaryColor)
+
+  // Drag-to-reposition state (refs to avoid re-render on drag)
+  const isDraggingHero = useRef(false)
+  const heroDragStart = useRef<{ clientX: number; clientY: number; posX: number; posY: number } | null>(null)
+
+  const handleHeroPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    e.currentTarget.setPointerCapture(e.pointerId)
+    isDraggingHero.current = true
+    heroDragStart.current = { clientX: e.clientX, clientY: e.clientY, posX: heroBgPosition.x, posY: heroBgPosition.y }
+  }, [heroBgPosition])
+
+  const handleHeroPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingHero.current || !heroDragStart.current) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const dx = ((e.clientX - heroDragStart.current.clientX) / rect.width) * 100
+    const dy = ((e.clientY - heroDragStart.current.clientY) / rect.height) * 100
+    setHeroBgPosition({
+      x: Math.max(0, Math.min(100, heroDragStart.current.posX - dx)),
+      y: Math.max(0, Math.min(100, heroDragStart.current.posY - dy)),
+    })
+  }, [])
+
+  const handleHeroPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    e.currentTarget.releasePointerCapture(e.pointerId)
+    isDraggingHero.current = false
+    heroDragStart.current = null
+  }, [])
 
   const [heroHeading, setHeroHeading] = useState(overrides.heroHeading ?? D.heroHeading)
   const [heroSubheading, setHeroSubheading] = useState(overrides.heroSubheading ?? D.heroSubheading)
@@ -91,6 +120,8 @@ export default function SettingsPage() {
     setPrimaryColor(overrides.primaryColor ?? D.primaryColor)
     setAccentColor(overrides.accentColor ?? D.accentColor)
     setHeroBgImage(overrides.heroBgImage)
+    setHeroBgPosition(overrides.heroBgPosition ?? { x: 50, y: 50 })
+    setHeroBgZoom(overrides.heroBgZoom ?? 1)
     setHeroBgOverlay(overrides.heroBgOverlay ?? 0.5)
     setHeroGradientFrom(overrides.heroGradientFrom ?? D.primaryDark)
     setHeroGradientTo(overrides.heroGradientTo ?? D.primaryColor)
@@ -139,6 +170,7 @@ export default function SettingsPage() {
       navBgColor, navTextColor,
       primaryColor, accentColor,
       ...(heroBgImage !== undefined ? { heroBgImage } : {}),
+      heroBgPosition, heroBgZoom,
       heroBgOverlay, heroGradientFrom, heroGradientTo,
       heroHeading, heroSubheading,
       heroCta1Text, heroCta1Url, heroCta1Color,
@@ -150,11 +182,6 @@ export default function SettingsPage() {
     }
     save(u)
   }
-
-  // ── preview hero style ────────────────────────────────────
-  const heroPreviewStyle = heroBgImage
-    ? { backgroundImage: `url(${heroBgImage})`, backgroundSize: "cover", backgroundPosition: "center" }
-    : { background: `linear-gradient(135deg, ${heroGradientFrom}, ${heroGradientTo})` }
 
   return (
     <div className="flex-1 p-8 overflow-y-auto">
@@ -397,72 +424,113 @@ export default function SettingsPage() {
           <div className={CARD}>
             <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400">Hero Background</h2>
 
-            {/* Preview */}
-            <div className="relative w-full h-24 rounded-xl overflow-hidden border border-gray-100" style={heroPreviewStyle}>
-              {heroBgImage && (
-                <div className="absolute inset-0" style={{ backgroundColor: `rgba(0,0,0,${heroBgOverlay})` }} />
-              )}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-white text-xs font-bold drop-shadow">Hero Preview</span>
-              </div>
-            </div>
+            {heroBgImage ? (
+              <>
+                {/* Drag-to-reposition preview */}
+                <div
+                  className="relative w-full h-36 rounded-xl overflow-hidden border border-gray-100 select-none"
+                  style={{ cursor: isDraggingHero.current ? "grabbing" : "grab" }}
+                  onPointerDown={handleHeroPointerDown}
+                  onPointerMove={handleHeroPointerMove}
+                  onPointerUp={handleHeroPointerUp}
+                  onPointerCancel={handleHeroPointerUp}
+                >
+                  <img
+                    src={heroBgImage}
+                    alt=""
+                    className="w-full h-full object-cover pointer-events-none"
+                    style={{
+                      objectPosition: `${heroBgPosition.x}% ${heroBgPosition.y}%`,
+                      transform: heroBgZoom !== 1 ? `scale(${heroBgZoom})` : undefined,
+                      transformOrigin: `${heroBgPosition.x}% ${heroBgPosition.y}%`,
+                    }}
+                    draggable={false}
+                  />
+                  <div className="absolute inset-0 pointer-events-none" style={{ backgroundColor: `rgba(0,0,0,${heroBgOverlay})` }} />
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/50 text-white text-[10px] px-2 py-0.5 rounded-full pointer-events-none">
+                    Drag to reposition
+                  </div>
+                </div>
 
-            {/* Image upload */}
-            <div>
-              <p className="text-xs font-semibold text-gray-600 mb-2">Background Image</p>
-              {heroBgImage ? (
+                {/* Zoom slider */}
+                <div className="flex items-center gap-2 px-1">
+                  <span className="text-[10px] text-gray-400 w-5 text-right">1×</span>
+                  <input
+                    type="range" min="1" max="3" step="0.05" value={heroBgZoom}
+                    onChange={e => setHeroBgZoom(Number(e.target.value))}
+                    className="flex-1 h-1.5 accent-gray-700 cursor-pointer"
+                  />
+                  <span className="text-[10px] text-gray-400 w-5">3×</span>
+                </div>
+                <p className="text-xs text-gray-400 text-center -mt-1">
+                  Zoom: {heroBgZoom.toFixed(2)}× · Focus: {Math.round(heroBgPosition.x)}% / {Math.round(heroBgPosition.y)}%
+                </p>
+
+                {/* Overlay slider */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-2">
+                    Dark Overlay — {Math.round(heroBgOverlay * 100)}%
+                  </label>
+                  <input type="range" min="0" max="0.85" step="0.05" value={heroBgOverlay}
+                    onChange={e => setHeroBgOverlay(Number(e.target.value))}
+                    className="w-full h-1.5 accent-gray-700 cursor-pointer" />
+                  <p className="text-xs text-gray-400 mt-1">Controls text readability over the image</p>
+                </div>
+
+                {/* Replace / Remove */}
                 <div className="flex gap-2">
                   <button type="button" onClick={() => heroImgRef.current?.click()} className="flex-1 flex items-center justify-center gap-1 text-xs py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50">
                     <RefreshCw size={11} /> Replace
                   </button>
-                  <button type="button" onClick={() => setHeroBgImage(null)} className="flex-1 flex items-center justify-center gap-1 text-xs py-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50">
+                  <button type="button" onClick={() => { setHeroBgImage(null); setHeroBgPosition({ x: 50, y: 50 }); setHeroBgZoom(1) }}
+                    className="flex-1 flex items-center justify-center gap-1 text-xs py-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50">
                     <ImageOff size={11} /> Remove
                   </button>
                 </div>
-              ) : (
-                <button type="button" onClick={() => heroImgRef.current?.click()} className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border-2 border-dashed border-gray-200 text-sm text-gray-500 hover:border-gray-400 transition-colors">
+              </>
+            ) : (
+              <>
+                {/* Gradient preview */}
+                <div
+                  className="relative w-full h-24 rounded-xl overflow-hidden border border-gray-100"
+                  style={{ background: `linear-gradient(135deg, ${heroGradientFrom}, ${heroGradientTo})` }}
+                >
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-white text-xs font-bold drop-shadow">Gradient Preview</span>
+                  </div>
+                </div>
+
+                {/* Upload button */}
+                <button type="button" onClick={() => heroImgRef.current?.click()}
+                  className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border-2 border-dashed border-gray-200 text-sm text-gray-500 hover:border-gray-400 transition-colors">
                   <Upload size={13} /> Upload Image
                 </button>
-              )}
-              <input ref={heroImgRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleHeroFile} className="hidden" />
-              <p className="text-xs text-gray-400 mt-1">JPG, PNG, WebP · Max 5 MB</p>
-            </div>
+                <p className="text-xs text-gray-400 -mt-2 text-center">JPG, PNG, WebP · Max 5 MB</p>
 
-            {/* Overlay (when image) */}
-            {heroBgImage && (
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-2">
-                  Dark Overlay — {Math.round(heroBgOverlay * 100)}%
-                </label>
-                <input type="range" min="0" max="0.85" step="0.05" value={heroBgOverlay}
-                  onChange={e => setHeroBgOverlay(Number(e.target.value))}
-                  className="w-full h-1.5 accent-gray-700 cursor-pointer" />
-                <p className="text-xs text-gray-400 mt-1">Controls text readability over the image</p>
-              </div>
-            )}
-
-            {/* Gradient (when no image) */}
-            {!heroBgImage && (
-              <div>
-                <p className="text-xs font-semibold text-gray-600 mb-2">Gradient Colors</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-xs text-gray-400 mb-1">From</p>
-                    <div className="flex items-center gap-2">
-                      <input type="color" value={heroGradientFrom} onChange={e => setHeroGradientFrom(e.target.value)} className="w-9 h-9 rounded border border-gray-300 cursor-pointer p-0.5 flex-shrink-0" />
-                      <input type="text" value={heroGradientFrom} onChange={e => setHeroGradientFrom(e.target.value)} className={`${INPUT} font-mono text-xs uppercase`} maxLength={7} />
+                {/* Gradient pickers */}
+                <div>
+                  <p className="text-xs font-semibold text-gray-600 mb-2">Gradient Colors</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs text-gray-400 mb-1">From</p>
+                      <div className="flex items-center gap-2">
+                        <input type="color" value={heroGradientFrom} onChange={e => setHeroGradientFrom(e.target.value)} className="w-9 h-9 rounded border border-gray-300 cursor-pointer p-0.5 flex-shrink-0" />
+                        <input type="text" value={heroGradientFrom} onChange={e => setHeroGradientFrom(e.target.value)} className={`${INPUT} font-mono text-xs uppercase`} maxLength={7} />
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400 mb-1">To</p>
-                    <div className="flex items-center gap-2">
-                      <input type="color" value={heroGradientTo} onChange={e => setHeroGradientTo(e.target.value)} className="w-9 h-9 rounded border border-gray-300 cursor-pointer p-0.5 flex-shrink-0" />
-                      <input type="text" value={heroGradientTo} onChange={e => setHeroGradientTo(e.target.value)} className={`${INPUT} font-mono text-xs uppercase`} maxLength={7} />
+                    <div>
+                      <p className="text-xs text-gray-400 mb-1">To</p>
+                      <div className="flex items-center gap-2">
+                        <input type="color" value={heroGradientTo} onChange={e => setHeroGradientTo(e.target.value)} className="w-9 h-9 rounded border border-gray-300 cursor-pointer p-0.5 flex-shrink-0" />
+                        <input type="text" value={heroGradientTo} onChange={e => setHeroGradientTo(e.target.value)} className={`${INPUT} font-mono text-xs uppercase`} maxLength={7} />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              </>
             )}
+
+            <input ref={heroImgRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleHeroFile} className="hidden" />
           </div>
 
         </div>

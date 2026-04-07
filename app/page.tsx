@@ -19,32 +19,43 @@ export default function HomePage() {
     brand.trustBadge4,
   ].filter(Boolean)
 
-  // Hero background: image if set, else gradient
-  const heroStyle = brand.heroBgImage
-    ? { backgroundImage: `url(${brand.heroBgImage})`, backgroundSize: "cover", backgroundPosition: "center" }
-    : { background: `linear-gradient(135deg, ${brand.heroGradientFrom} 0%, ${brand.heroGradientTo} 100%)` }
-
   return (
     <div>
       {/* Hero */}
-      <section className="relative overflow-hidden" style={heroStyle}>
-        {/* Overlay — always present for image, optional for gradient */}
-        {brand.heroBgImage && (
-          <div
-            className="absolute inset-0"
-            style={{ backgroundColor: `rgba(0,0,0,${brand.heroBgOverlay ?? 0.5})` }}
-          />
-        )}
-
-        {/* Dot pattern (gradient mode only) */}
-        {!brand.heroBgImage && (
-          <div
-            className="absolute inset-0 opacity-10"
-            style={{
-              backgroundImage: `radial-gradient(circle at 25% 50%, white 1px, transparent 1px), radial-gradient(circle at 75% 50%, white 1px, transparent 1px)`,
-              backgroundSize: "60px 60px",
-            }}
-          />
+      <section className="relative overflow-hidden">
+        {/* Background — image with focal point/zoom, or gradient */}
+        {brand.heroBgImage ? (
+          <>
+            <img
+              src={brand.heroBgImage}
+              alt=""
+              aria-hidden
+              className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+              style={{
+                objectPosition: `${brand.heroBgPosition.x}% ${brand.heroBgPosition.y}%`,
+                transform: brand.heroBgZoom !== 1 ? `scale(${brand.heroBgZoom})` : undefined,
+                transformOrigin: `${brand.heroBgPosition.x}% ${brand.heroBgPosition.y}%`,
+              }}
+            />
+            <div
+              className="absolute inset-0"
+              style={{ backgroundColor: `rgba(0,0,0,${brand.heroBgOverlay})` }}
+            />
+          </>
+        ) : (
+          <>
+            <div
+              className="absolute inset-0"
+              style={{ background: `linear-gradient(135deg, ${brand.heroGradientFrom} 0%, ${brand.heroGradientTo} 100%)` }}
+            />
+            <div
+              className="absolute inset-0 opacity-10"
+              style={{
+                backgroundImage: `radial-gradient(circle at 25% 50%, white 1px, transparent 1px), radial-gradient(circle at 75% 50%, white 1px, transparent 1px)`,
+                backgroundSize: "60px 60px",
+              }}
+            />
+          </>
         )}
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">

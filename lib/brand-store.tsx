@@ -34,6 +34,8 @@ export type BrandOverrides = Partial<{
   heroCta2Url: string
   // Hero background
   heroBgImage: string | null
+  heroBgPosition: { x: number; y: number }
+  heroBgZoom: number
   heroBgOverlay: number        // 0–0.85
   heroGradientFrom: string
   heroGradientTo: string
@@ -99,6 +101,8 @@ export function buildBrand(overrides: BrandOverrides) {
     navBgColor: overrides.navBgColor ?? base.primaryColor,
     navTextColor: overrides.navTextColor ?? "#ffffff",
     heroBgImage: overrides.heroBgImage ?? null,
+    heroBgPosition: overrides.heroBgPosition ?? { x: 50, y: 50 },
+    heroBgZoom: overrides.heroBgZoom ?? 1,
     heroBgOverlay: overrides.heroBgOverlay ?? 0.5,
     heroGradientFrom: overrides.heroGradientFrom ?? base.primaryDark,
     heroGradientTo: overrides.heroGradientTo ?? base.primaryColor,
