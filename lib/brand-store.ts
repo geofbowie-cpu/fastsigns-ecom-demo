@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { brand as defaultBrand } from "@/brand.config"
 
 const STORAGE_KEY = "ecom_brand_v1"
@@ -22,7 +22,13 @@ export type BrandOverrides = Partial<{
   // Hero copy
   heroHeading: string
   heroSubheading: string
-  heroCtaText: string
+  // Hero CTA 1 (primary)
+  heroCta1Text: string
+  heroCta1Url: string
+  heroCta1Color: string
+  // Hero CTA 2 (secondary / ghost)
+  heroCta2Text: string
+  heroCta2Url: string
   // Hero background
   heroBgImage: string | null
   heroBgOverlay: number        // 0–0.85
@@ -45,6 +51,37 @@ export type BrandOverrides = Partial<{
   enterpriseCtaText: string
 }>
 
+// ─────────────────────────────────────────────────────────────
+// Module-level singleton — all useBrandStore() calls share state.
+// Without this, each component reads localStorage once on mount
+// and never sees updates made by other components.
+// ─────────────────────────────────────────────────────────────
+function loadOverrides(): BrandOverrides {
+  if (typeof window === "undefined") return {}
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
+let _overrides: BrandOverrides = {}
+const _listeners = new Set<() => void>()
+
+function initStore() {
+  if (typeof window !== "undefined" && Object.keys(_overrides).length === 0) {
+    _overrides = loadOverrides()
+  }
+}
+
+function notifyAll() {
+  _listeners.forEach((fn) => fn())
+}
+
+// ─────────────────────────────────────────────────────────────
+// Color helpers
+// ─────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): [number, number, number] {
   const h = hex.replace("#", "")
   const n = parseInt(h.length === 3 ? h.split("").map((c) => c + c).join("") : h, 16)
@@ -78,6 +115,8 @@ export function buildBrand(overrides: BrandOverrides) {
     if (!overrides.primaryLight) base.primaryLight = adjustBrightness(overrides.primaryColor, 35)
   }
 
+  const accentColor = overrides.accentColor ?? base.accentColor
+
   return {
     ...base,
     // Nav
@@ -88,6 +127,12 @@ export function buildBrand(overrides: BrandOverrides) {
     heroBgOverlay: overrides.heroBgOverlay ?? 0.5,
     heroGradientFrom: overrides.heroGradientFrom ?? base.primaryDark,
     heroGradientTo: overrides.heroGradientTo ?? base.primaryColor,
+    // Hero CTAs
+    heroCta1Text: overrides.heroCta1Text ?? base.heroCtaText ?? "Shop Now",
+    heroCta1Url: overrides.heroCta1Url ?? "/products",
+    heroCta1Color: overrides.heroCta1Color ?? accentColor,
+    heroCta2Text: overrides.heroCta2Text ?? "Trade Show Displays",
+    heroCta2Url: overrides.heroCta2Url ?? "/products?category=trade-show",
     // Trust badges
     trustBadge1: overrides.trustBadge1 ?? "Fortune 500 Trusted",
     trustBadge2: overrides.trustBadge2 ?? "2-Year Warranty",
@@ -108,35 +153,39 @@ export function buildBrand(overrides: BrandOverrides) {
   }
 }
 
-function loadOverrides(): BrandOverrides {
-  if (typeof window === "undefined") return {}
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : {}
-  } catch {
-    return {}
-  }
-}
-
 export function useBrandStore() {
-  const [overrides, setOverrides] = useState<BrandOverrides>(loadOverrides)
+  // Subscribe to singleton — force re-render when notifyAll() fires
+  const [tick, setTick] = useState(0)
   const [saved, setSaved] = useState(false)
 
+  useEffect(() => {
+    initStore()
+    setTick((t) => t + 1) // pick up any overrides loaded after SSR
+    const handler = () => setTick((t) => t + 1)
+    _listeners.add(handler)
+    return () => { _listeners.delete(handler) }
+  }, [])
+
   const save = useCallback((updates: BrandOverrides) => {
+    _overrides = { ...updates }
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updates))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(_overrides))
     } catch {}
-    setOverrides({ ...updates })
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
+    notifyAll()
   }, [])
 
   const reset = useCallback(() => {
+    _overrides = {}
     try {
       localStorage.removeItem(STORAGE_KEY)
     } catch {}
-    setOverrides({})
+    notifyAll()
   }, [])
 
-  return { brand: buildBrand(overrides), overrides, save, reset, saved }
+  // Suppress unused warning — tick drives re-renders, brand is derived fresh each render
+  void tick
+
+  return { brand: buildBrand(_overrides), overrides: _overrides, save, reset, saved }
 }

@@ -60,7 +60,11 @@ export default function SettingsPage() {
 
   const [heroHeading, setHeroHeading] = useState(overrides.heroHeading ?? D.heroHeading)
   const [heroSubheading, setHeroSubheading] = useState(overrides.heroSubheading ?? D.heroSubheading)
-  const [heroCtaText, setHeroCtaText] = useState(overrides.heroCtaText ?? D.heroCtaText)
+  const [heroCta1Text, setHeroCta1Text] = useState(overrides.heroCta1Text ?? D.heroCtaText ?? "Shop Now")
+  const [heroCta1Url, setHeroCta1Url] = useState(overrides.heroCta1Url ?? "/products")
+  const [heroCta1Color, setHeroCta1Color] = useState(overrides.heroCta1Color ?? D.accentColor)
+  const [heroCta2Text, setHeroCta2Text] = useState(overrides.heroCta2Text ?? "Trade Show Displays")
+  const [heroCta2Url, setHeroCta2Url] = useState(overrides.heroCta2Url ?? "/products?category=trade-show")
 
   const [trustBadge1, setTrustBadge1] = useState(overrides.trustBadge1 ?? "Fortune 500 Trusted")
   const [trustBadge2, setTrustBadge2] = useState(overrides.trustBadge2 ?? "2-Year Warranty")
@@ -92,7 +96,11 @@ export default function SettingsPage() {
     setHeroGradientTo(overrides.heroGradientTo ?? D.primaryColor)
     setHeroHeading(overrides.heroHeading ?? D.heroHeading)
     setHeroSubheading(overrides.heroSubheading ?? D.heroSubheading)
-    setHeroCtaText(overrides.heroCtaText ?? D.heroCtaText)
+    setHeroCta1Text(overrides.heroCta1Text ?? D.heroCtaText ?? "Shop Now")
+    setHeroCta1Url(overrides.heroCta1Url ?? "/products")
+    setHeroCta1Color(overrides.heroCta1Color ?? D.accentColor)
+    setHeroCta2Text(overrides.heroCta2Text ?? "Trade Show Displays")
+    setHeroCta2Url(overrides.heroCta2Url ?? "/products?category=trade-show")
     setTrustBadge1(overrides.trustBadge1 ?? "Fortune 500 Trusted")
     setTrustBadge2(overrides.trustBadge2 ?? "2-Year Warranty")
     setTrustBadge3(overrides.trustBadge3 ?? "Nationwide Installation")
@@ -132,7 +140,9 @@ export default function SettingsPage() {
       primaryColor, accentColor,
       ...(heroBgImage !== undefined ? { heroBgImage } : {}),
       heroBgOverlay, heroGradientFrom, heroGradientTo,
-      heroHeading, heroSubheading, heroCtaText,
+      heroHeading, heroSubheading,
+      heroCta1Text, heroCta1Url, heroCta1Color,
+      heroCta2Text, heroCta2Url,
       trustBadge1, trustBadge2, trustBadge3, trustBadge4,
       catSectionHeading, catSectionSubheading,
       featuredSectionHeading, featuredSectionSubheading,
@@ -236,10 +246,35 @@ export default function SettingsPage() {
             <Field label="Subheading">
               <textarea rows={3} value={heroSubheading} onChange={e => setHeroSubheading(e.target.value)} className={`${INPUT} resize-none`} />
             </Field>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <Field label="CTA Button Text">
-                <input type="text" value={heroCtaText} onChange={e => setHeroCtaText(e.target.value)} className={INPUT} />
-              </Field>
+            {/* CTA 1 */}
+            <div>
+              <p className="text-xs font-semibold text-gray-600 mb-2">Primary Button</p>
+              <div className="grid sm:grid-cols-3 gap-3 items-end">
+                <Field label="Text">
+                  <input type="text" value={heroCta1Text} onChange={e => setHeroCta1Text(e.target.value)} className={INPUT} />
+                </Field>
+                <Field label="URL">
+                  <input type="text" value={heroCta1Url} onChange={e => setHeroCta1Url(e.target.value)} className={INPUT} placeholder="/products" />
+                </Field>
+                <Field label="Color">
+                  <div className="flex items-center gap-2">
+                    <input type="color" value={heroCta1Color} onChange={e => setHeroCta1Color(e.target.value)} className="w-10 h-9 rounded border border-gray-300 cursor-pointer p-0.5 flex-shrink-0" />
+                    <input type="text" value={heroCta1Color} onChange={e => setHeroCta1Color(e.target.value)} className={`${INPUT} font-mono uppercase`} maxLength={7} />
+                  </div>
+                </Field>
+              </div>
+            </div>
+            {/* CTA 2 */}
+            <div>
+              <p className="text-xs font-semibold text-gray-600 mb-2">Secondary Button <span className="font-normal text-gray-400">(ghost style · leave blank to hide)</span></p>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <Field label="Text">
+                  <input type="text" value={heroCta2Text} onChange={e => setHeroCta2Text(e.target.value)} className={INPUT} placeholder="Leave blank to hide" />
+                </Field>
+                <Field label="URL">
+                  <input type="text" value={heroCta2Url} onChange={e => setHeroCta2Url(e.target.value)} className={INPUT} placeholder="/products" />
+                </Field>
+              </div>
             </div>
             <div>
               <p className="text-xs font-semibold text-gray-600 mb-2">Trust Badges (below CTA)</p>

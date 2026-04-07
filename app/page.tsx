@@ -65,18 +65,20 @@ export default function HomePage() {
             </p>
             <div className="flex flex-wrap gap-3">
               <Link
-                href="/products"
+                href={brand.heroCta1Url}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm transition-all hover:opacity-90"
-                style={{ backgroundColor: brand.accentColor, color: "#000" }}
+                style={{ backgroundColor: brand.heroCta1Color, color: "#000" }}
               >
-                {brand.heroCtaText} <ArrowRight size={16} />
+                {brand.heroCta1Text} <ArrowRight size={16} />
               </Link>
-              <Link
-                href="/products?category=trade-show"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm bg-white/10 text-white border border-white/20 hover:bg-white/20 transition-all"
-              >
-                Trade Show Displays
-              </Link>
+              {brand.heroCta2Text && (
+                <Link
+                  href={brand.heroCta2Url}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm bg-white/10 text-white border border-white/20 hover:bg-white/20 transition-all"
+                >
+                  {brand.heroCta2Text}
+                </Link>
+              )}
             </div>
             {trustBadges.length > 0 && (
               <div className="flex flex-wrap gap-4 mt-8">
