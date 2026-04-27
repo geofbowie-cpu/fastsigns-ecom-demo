@@ -22,7 +22,7 @@ export default function HomePage() {
   return (
     <div>
       {/* Hero */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden min-h-[480px] md:min-h-[560px]">
         {/* Background — image with focal point/zoom, or gradient */}
         {brand.heroBgImage ? (
           <>
