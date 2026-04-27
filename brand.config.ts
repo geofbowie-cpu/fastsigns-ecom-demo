@@ -6,7 +6,7 @@ export const brand = {
   company: "Reddy Ice",
   tagline: "Facility Signage & Safety Products",
   logoText: "REDDY ICE",
-  logoImage: "https://www.reddyice.com/wp-content/uploads/2021/09/logo.png" as string | null,
+  logoImage: "/reddy-logo.png" as string | null,
   // Hero background (stock cold-storage / ice photo)
   heroBgImage: "https://images.unsplash.com/photo-1551845728-6820a30c64e2?auto=format&fit=crop&w=2000&q=80" as string | null,
   heroBgPosition: { x: 50, y: 45 },
