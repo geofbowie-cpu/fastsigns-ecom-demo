@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useCallback, useEffect } from "react"
 import { brand as defaultBrand } from "@/brand.config"
 
-const STORAGE_KEY = "ecom_brand_v1"
+const STORAGE_KEY = "ecom_brand_reddy_v1"
 
 // ─────────────────────────────────────────────────────────────
 // Types
