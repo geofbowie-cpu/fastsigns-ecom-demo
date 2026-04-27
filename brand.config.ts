@@ -16,6 +16,31 @@ export const brand = {
   heroSubheading:
     "Order safety signage, wayfinding, rebranding materials, and celebration products — approved and shipped direct to your facility.",
   heroCtaText: "Browse Products",
+  // Hero CTA overrides (read by buildBrand)
+  heroCta1Text: "Browse Products",
+  heroCta1Url: "/products",
+  heroCta1Color: "#e31837",
+  heroCta2Text: "Startup Bundle",
+  heroCta2Url: "/products?category=startup-bundles",
+  // Hero background defaults
+  heroGradientFrom: "#003d7a",
+  heroGradientTo: "#0057a8",
+  // Trust badges
+  trustBadge1: "OSHA-Compliant Messaging",
+  trustBadge2: "Pre-Approved Templates",
+  trustBadge3: "Nationwide Installation",
+  trustBadge4: "Net 30 / PO Accepted",
+  // Category section
+  catSectionHeading: "Shop by Category",
+  catSectionSubheading: "Pre-approved signage for every Reddy Ice facility need",
+  // Featured section
+  featuredSectionHeading: "Most Ordered",
+  featuredSectionSubheading: "Top products across Reddy Ice facilities",
+  // Enterprise callout
+  enterpriseHeading: "Connects to your procurement system",
+  enterpriseBody:
+    "This storefront integrates directly with enterprise procurement platforms — COUPA, SAP Ariba, Oracle, and others. PO numbers, cost center coding, and approval routing happen right at checkout. No shadow spend. No rogue ordering.",
+  enterpriseCtaText: "Start an order",
   // Procurement integration
   procurementSystem: null as "COUPA" | "SAP Ariba" | "Oracle" | "Custom" | null,
   procurementLabel: "",
