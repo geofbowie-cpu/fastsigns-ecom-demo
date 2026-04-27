@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "deploy:demo": "git checkout main && vercel link --yes --project fastsigns-ecom-demo --scope fastsigns-ely && vercel deploy --prod",
+    "deploy:reddy": "git checkout reddy-ice && vercel link --yes --project fastsigns-reddy --scope fastsigns-ely && vercel deploy --prod && git checkout main"
   },
   "dependencies": {
     "lucide-react": "^1.7.0",
