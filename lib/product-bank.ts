@@ -2,6 +2,16 @@
 // products they want to show on their site. This is the single source of
 // truth. To add a new product, add it here.
 
+// Per-product overrides stored in tenants.product_overrides JSONB.
+// All fields are optional — only set what you want to override.
+export type ProductOverride = {
+  disabled?: boolean   // hide this product from the tenant's site
+  price?: number       // override startingPrice
+  imageUrl?: string    // custom product image URL
+  featured?: boolean   // override featured flag
+}
+export type ProductOverrides = Record<string, ProductOverride>
+
 export type BankProduct = {
   slug: string
   name: string
@@ -389,8 +399,27 @@ export function categoriesForTenant(enabledSlugs: string[]): BankCategory[] {
   return bankCategories.filter((c) => set.has(c.slug))
 }
 
-export function productsForTenant(enabledSlugs: string[]): BankProduct[] {
-  if (enabledSlugs.length === 0) return bankProducts
-  const set = new Set(enabledSlugs)
-  return bankProducts.filter((p) => set.has(p.category))
+export function productsForTenant(
+  enabledSlugs: string[],
+  overrides: ProductOverrides = {}
+): BankProduct[] {
+  const base =
+    enabledSlugs.length === 0
+      ? bankProducts
+      : bankProducts.filter((p) => {
+          const set = new Set(enabledSlugs)
+          return set.has(p.category)
+        })
+  return base
+    .filter((p) => !overrides[p.slug]?.disabled)
+    .map((p) => {
+      const ov = overrides[p.slug]
+      if (!ov) return p
+      return {
+        ...p,
+        startingPrice: ov.price ?? p.startingPrice,
+        imageUrl: ov.imageUrl ?? p.imageUrl,
+        featured: ov.featured ?? p.featured,
+      }
+    })
 }

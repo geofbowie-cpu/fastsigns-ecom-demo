@@ -2,6 +2,7 @@
 // `brand` is a flexible jsonb blob that mirrors brand.config.ts shape.
 
 import { adminClient, publicClient } from "@/lib/supabase"
+import type { ProductOverrides } from "@/lib/product-bank"
 
 export type TenantBrand = {
   // Identity
@@ -58,7 +59,7 @@ export type Tenant = {
   name: string
   brand: TenantBrand
   enabled_categories: string[]
-  product_overrides: Record<string, unknown>
+  product_overrides: ProductOverrides
   admin_email: string | null
   archived: boolean
   created_at: string

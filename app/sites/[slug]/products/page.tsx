@@ -18,7 +18,7 @@ export default async function TenantProductsPage({
 
   const b = resolveBrand(tenant.brand)
   const cats = categoriesForTenant(tenant.enabled_categories)
-  const all = productsForTenant(tenant.enabled_categories)
+  const all = productsForTenant(tenant.enabled_categories, tenant.product_overrides)
   const filtered = category ? all.filter((p) => p.category === category) : all
 
   return (
@@ -77,14 +77,23 @@ export default async function TenantProductsPage({
               key={p.slug}
               className="bg-white border border-gray-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow"
             >
-              <div
-                className="h-36 flex items-center justify-center text-5xl"
-                style={{
-                  background: `linear-gradient(135deg, ${p.gradientFrom} 0%, ${p.gradientTo} 100%)`,
-                }}
-              >
-                {p.icon}
-              </div>
+              {p.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={p.imageUrl}
+                  alt={p.name}
+                  className="h-36 w-full object-cover"
+                />
+              ) : (
+                <div
+                  className="h-36 flex items-center justify-center text-5xl"
+                  style={{
+                    background: `linear-gradient(135deg, ${p.gradientFrom} 0%, ${p.gradientTo} 100%)`,
+                  }}
+                >
+                  {p.icon}
+                </div>
+              )}
               <div className="p-4">
                 <h3 className="font-bold text-gray-900 text-sm">{p.name}</h3>
                 <p className="text-xs text-gray-500 mt-1 line-clamp-2">{p.shortDesc}</p>

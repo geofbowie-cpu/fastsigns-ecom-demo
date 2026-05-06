@@ -30,7 +30,7 @@ export default async function TenantHomePage({
 
   const b = resolveBrand(tenant.brand)
   const cats = categoriesForTenant(tenant.enabled_categories)
-  const products = productsForTenant(tenant.enabled_categories)
+  const products = productsForTenant(tenant.enabled_categories, tenant.product_overrides)
   const featured = products.filter((p) => p.featured).slice(0, 4)
 
   const trustBadges = [b.trustBadge1, b.trustBadge2, b.trustBadge3, b.trustBadge4].filter(
@@ -171,14 +171,23 @@ export default async function TenantHomePage({
                   key={p.slug}
                   className="bg-white border border-gray-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow"
                 >
-                  <div
-                    className="h-40 flex items-center justify-center text-5xl"
-                    style={{
-                      background: `linear-gradient(135deg, ${p.gradientFrom} 0%, ${p.gradientTo} 100%)`,
-                    }}
-                  >
-                    {p.icon}
-                  </div>
+                  {p.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={p.imageUrl}
+                      alt={p.name}
+                      className="h-40 w-full object-cover"
+                    />
+                  ) : (
+                    <div
+                      className="h-40 flex items-center justify-center text-5xl"
+                      style={{
+                        background: `linear-gradient(135deg, ${p.gradientFrom} 0%, ${p.gradientTo} 100%)`,
+                      }}
+                    >
+                      {p.icon}
+                    </div>
+                  )}
                   <div className="p-4">
                     <h3 className="font-bold text-gray-900 text-sm">{p.name}</h3>
                     <p className="text-xs text-gray-500 mt-1 line-clamp-2">{p.shortDesc}</p>

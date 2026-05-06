@@ -2,7 +2,12 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import type { BankCategory } from "@/lib/product-bank"
+import {
+  bankProducts,
+  categoriesForTenant,
+  type BankCategory,
+  type ProductOverrides,
+} from "@/lib/product-bank"
 import type { Tenant } from "@/lib/tenant"
 import ImageUploader from "../../../_shared/ImageUploader"
 
@@ -33,9 +38,28 @@ export default function EditSiteForm({
     (tenant.brand?.heroBgImage as string) ?? ""
   )
   const [enabled, setEnabled] = useState<Set<string>>(new Set(tenant.enabled_categories))
+  const [productOverrides, setProductOverrides] = useState<ProductOverrides>(
+    (tenant.product_overrides as ProductOverrides) ?? {}
+  )
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  function patchProductOverride(
+    productSlug: string,
+    patch: Partial<ProductOverrides[string]>
+  ) {
+    setProductOverrides((prev) => {
+      const existing = prev[productSlug] ?? {}
+      const next = { ...existing, ...patch }
+      // drop undefined keys so we don't pollute the DB
+      const cleaned: typeof next = {}
+      for (const [k, v] of Object.entries(next)) {
+        if (v !== undefined) (cleaned as any)[k] = v
+      }
+      return { ...prev, [productSlug]: cleaned }
+    })
+  }
 
   function toggleCategory(catSlug: string) {
     const next = new Set(enabled)
@@ -73,6 +97,7 @@ export default function EditSiteForm({
           name,
           brand,
           enabled_categories: Array.from(enabled),
+          product_overrides: productOverrides,
           admin_email: adminEmail || null,
         }),
       })
@@ -229,6 +254,19 @@ export default function EditSiteForm({
         </div>
       </Section>
 
+      {/* Products */}
+      <Section
+        title="Product overrides"
+        hint="Disable individual products, set a custom price, or swap in a product image. Disabled products are hidden from this site."
+      >
+        <ProductOverridesPanel
+          enabledCategories={Array.from(enabled)}
+          overrides={productOverrides}
+          onChange={patchProductOverride}
+          tenantSlug={tenant.slug}
+        />
+      </Section>
+
       {error && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
           {error}
@@ -320,6 +358,182 @@ function ColorInput({
         onChange={(e) => onChange(e.target.value)}
         className={`${inputCls} font-mono`}
       />
+    </div>
+  )
+}
+
+// ── Product overrides panel ────────────────────────────────────
+
+function ProductOverridesPanel({
+  enabledCategories,
+  overrides,
+  onChange,
+  tenantSlug,
+}: {
+  enabledCategories: string[]
+  overrides: ProductOverrides
+  onChange: (slug: string, patch: Partial<ProductOverrides[string]>) => void
+  tenantSlug: string
+}) {
+  const cats = categoriesForTenant(enabledCategories)
+  // If no categories selected, show all
+  const catsToShow = cats.length > 0 ? cats : []
+
+  // Group products by category
+  const productsByCat = catsToShow.map((cat) => ({
+    cat,
+    products: bankProducts.filter((p) => p.category === cat.slug),
+  }))
+
+  if (productsByCat.length === 0) {
+    return (
+      <p className="text-xs text-gray-400 italic">
+        Enable at least one product category above to configure overrides.
+      </p>
+    )
+  }
+
+  return (
+    <div className="space-y-5">
+      {productsByCat.map(({ cat, products }) => (
+        <div key={cat.slug}>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-base">{cat.icon}</span>
+            <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+              {cat.name}
+            </span>
+          </div>
+          <div className="divide-y divide-gray-100 border border-gray-200 rounded-lg overflow-hidden">
+            {products.map((p) => {
+              const ov = overrides[p.slug] ?? {}
+              const disabled = ov.disabled ?? false
+              return (
+                <div
+                  key={p.slug}
+                  className={`flex flex-col sm:flex-row sm:items-start gap-3 p-3 transition-colors ${
+                    disabled ? "bg-gray-50 opacity-60" : "bg-white"
+                  }`}
+                >
+                  {/* Enable toggle */}
+                  <button
+                    type="button"
+                    onClick={() => onChange(p.slug, { disabled: !disabled })}
+                    title={disabled ? "Enable product" : "Disable product"}
+                    className={`mt-0.5 shrink-0 w-8 h-8 rounded-lg border-2 flex items-center justify-center transition-colors ${
+                      disabled
+                        ? "border-gray-300 bg-white text-gray-400 hover:border-red-300"
+                        : "border-blue-500 bg-blue-500 text-white hover:bg-blue-600"
+                    }`}
+                  >
+                    {disabled ? (
+                      <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
+                        <path
+                          d="M18 6L6 18M6 6l12 12"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                    ) : (
+                      <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
+                        <path
+                          d="M5 12l5 5L20 7"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
+                  </button>
+
+                  {/* Product info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      <span className="text-sm font-semibold text-gray-900">{p.name}</span>
+                      <span className="text-xs text-gray-400 font-mono">{p.slug}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{p.shortDesc}</p>
+
+                    {!disabled && (
+                      <div className="mt-2 flex flex-wrap gap-3 items-end">
+                        {/* Price override */}
+                        <label className="block">
+                          <span className="block text-xs font-semibold text-gray-600 mb-1">
+                            Starting price
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm text-gray-500">$</span>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              placeholder={String(p.startingPrice)}
+                              value={ov.price ?? ""}
+                              onChange={(e) => {
+                                const v = e.target.value
+                                onChange(p.slug, {
+                                  price: v === "" ? undefined : parseFloat(v),
+                                })
+                              }}
+                              className="w-24 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            {ov.price !== undefined && (
+                              <button
+                                type="button"
+                                onClick={() => onChange(p.slug, { price: undefined })}
+                                className="text-xs text-gray-400 hover:text-gray-600"
+                                title="Reset to default"
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                          {ov.price !== undefined && (
+                            <span className="text-xs text-gray-400 mt-0.5 block">
+                              Default: ${p.startingPrice}
+                            </span>
+                          )}
+                        </label>
+
+                        {/* Featured toggle */}
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={ov.featured ?? p.featured}
+                            onChange={(e) =>
+                              onChange(p.slug, { featured: e.target.checked })
+                            }
+                            className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-xs text-gray-600">Featured</span>
+                        </label>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Product image upload */}
+                  {!disabled && (
+                    <div className="w-full sm:w-36 shrink-0">
+                      <span className="block text-xs font-semibold text-gray-600 mb-1">
+                        Product image
+                      </span>
+                      <ImageUploader
+                        value={ov.imageUrl ?? ""}
+                        onChange={(url) => onChange(p.slug, { imageUrl: url || undefined })}
+                        slug={tenantSlug}
+                        kind="logo"
+                        previewAspect="4/3"
+                        recommendation="Product image. PNG/JPG/WEBP. Up to 10 MB."
+                      />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
