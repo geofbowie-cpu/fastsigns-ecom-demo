@@ -191,11 +191,13 @@ export default async function TenantHomePage({
                   <div className="p-4">
                     <h3 className="font-bold text-gray-900 text-sm">{p.name}</h3>
                     <p className="text-xs text-gray-500 mt-1 line-clamp-2">{p.shortDesc}</p>
-                    <div className="mt-3 flex items-baseline gap-1">
-                      <span className="text-xs text-gray-500">from</span>
-                      <span className="font-bold text-gray-900">${p.startingPrice}</span>
-                      <span className="text-xs text-gray-500">/ {p.unit}</span>
-                    </div>
+                    {b.showPricing && (
+                      <div className="mt-3 flex items-baseline gap-1">
+                        <span className="text-xs text-gray-500">from</span>
+                        <span className="font-bold text-gray-900">${p.startingPrice}</span>
+                        <span className="text-xs text-gray-500">/ {p.unit}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

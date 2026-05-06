@@ -46,6 +46,8 @@ export type TenantBrand = {
   // Footer / support
   footerTagline?: string
   supportEmail?: string
+  // Display
+  showPricing?: boolean
   // Procurement
   procurementSystem?: "COUPA" | "SAP Ariba" | "Oracle" | "Custom" | null
   procurementLabel?: string

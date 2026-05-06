@@ -27,6 +27,9 @@ export default function EditSiteForm({
   const [accentColor, setAccentColor] = useState(
     (tenant.brand?.accentColor as string) ?? "#f59e0b"
   )
+  const [showPricing, setShowPricing] = useState(
+    (tenant.brand?.showPricing as boolean) ?? true
+  )
   const [logoImage, setLogoImage] = useState((tenant.brand?.logoImage as string) ?? "")
   const [heroHeading, setHeroHeading] = useState(
     (tenant.brand?.heroHeading as string) ?? ""
@@ -80,6 +83,7 @@ export default function EditSiteForm({
         logoText: name.toUpperCase(),
         primaryColor,
         accentColor,
+        showPricing,
       }
       if (logoImage.trim()) brand.logoImage = logoImage.trim()
       else delete (brand as any).logoImage
@@ -168,6 +172,29 @@ export default function EditSiteForm({
             <ColorInput value={accentColor} onChange={setAccentColor} />
           </Field>
         </div>
+        <Field label="Pricing">
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={showPricing}
+              onClick={() => setShowPricing((v) => !v)}
+              className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
+                showPricing ? "bg-blue-600" : "bg-gray-300"
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                  showPricing ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
+            <span className="text-sm text-gray-700">
+              {showPricing ? "Show pricing" : "Hide pricing"}
+            </span>
+          </label>
+        </Field>
+
         <Field label="Logo">
           <ImageUploader
             value={logoImage}
