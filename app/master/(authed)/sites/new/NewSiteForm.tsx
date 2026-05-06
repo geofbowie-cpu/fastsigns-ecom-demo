@@ -29,6 +29,54 @@ export default function NewSiteForm({ categories }: { categories: BankCategory[]
   const [enabled, setEnabled] = useState<Set<string>>(new Set())
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [domain, setDomain] = useState("")
+  const [fetching, setFetching] = useState(false)
+  const [fetchInfo, setFetchInfo] = useState<string | null>(null)
+  const [fetchError, setFetchError] = useState<string | null>(null)
+
+  async function fetchFromBrand() {
+    if (!domain.trim()) return
+    setFetching(true)
+    setFetchError(null)
+    setFetchInfo(null)
+    try {
+      const res = await fetch("/api/master/brandfetch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain: domain.trim(), slug: slug || null }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setFetchError(json.error ?? "Fetch failed")
+        return
+      }
+      const b = json.brand
+      const filled: string[] = []
+      if (b.name && !name) {
+        handleNameChange(b.name)
+        filled.push("name")
+      }
+      if (b.primaryColor) {
+        setPrimaryColor(b.primaryColor)
+        filled.push("primary")
+      }
+      if (b.accentColor) {
+        setAccentColor(b.accentColor)
+        filled.push("accent")
+      }
+      if (b.logoUrl) {
+        setLogoImage(b.logoUrl)
+        filled.push(b.logoRehosted ? "logo (rehosted)" : "logo")
+      }
+      setFetchInfo(
+        filled.length
+          ? `Filled: ${filled.join(", ")}`
+          : "Brand found, but no usable assets returned"
+      )
+    } finally {
+      setFetching(false)
+    }
+  }
 
   function handleNameChange(v: string) {
     setName(v)
@@ -83,6 +131,48 @@ export default function NewSiteForm({ categories }: { categories: BankCategory[]
 
   return (
     <form onSubmit={submit} className="space-y-8">
+      {/* Brandfetch quick-start */}
+      <Section
+        title="Quick start from a domain"
+        hint="Type a company's domain and we'll auto-fill the brand name, colors, and logo from Brandfetch."
+      >
+        <div className="flex items-stretch gap-2">
+          <div className="flex-1 flex items-center gap-2 px-3 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500">
+            <span className="text-gray-400 text-sm font-mono">https://</span>
+            <input
+              value={domain}
+              onChange={(e) => setDomain(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault()
+                  void fetchFromBrand()
+                }
+              }}
+              placeholder="acme.com"
+              className="flex-1 py-2 text-sm focus:outline-none bg-transparent"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={fetchFromBrand}
+            disabled={fetching || !domain.trim()}
+            className="bg-gray-900 hover:bg-gray-800 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg whitespace-nowrap"
+          >
+            {fetching ? "Fetching…" : "Fetch brand"}
+          </button>
+        </div>
+        {fetchInfo && (
+          <div className="text-xs text-green-700 bg-green-50 border border-green-200 rounded px-2 py-1.5">
+            ✓ {fetchInfo}
+          </div>
+        )}
+        {fetchError && (
+          <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1.5">
+            {fetchError}
+          </div>
+        )}
+      </Section>
+
       {/* Identity */}
       <Section title="Identity">
         <Field label="Display name" hint="The brand's name as shown in nav and emails.">
