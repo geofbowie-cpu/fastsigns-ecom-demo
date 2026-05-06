@@ -13,7 +13,7 @@ export type BrandfetchHit = {
   raw?: unknown
 }
 
-const BF_BASE = "https://api.brandfetch.io/v2/brands"
+const BF_BASE = "https://api.brandfetch.io/v2/brands/domain"
 
 function pickLogo(
   logos: Array<{
