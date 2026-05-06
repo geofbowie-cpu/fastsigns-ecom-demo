@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import type { BankCategory } from "@/lib/product-bank"
 import type { Tenant } from "@/lib/tenant"
+import ImageUploader from "../../../_shared/ImageUploader"
 
 export default function EditSiteForm({
   tenant,
@@ -142,12 +143,14 @@ export default function EditSiteForm({
             <ColorInput value={accentColor} onChange={setAccentColor} />
           </Field>
         </div>
-        <Field label="Logo image URL">
-          <input
+        <Field label="Logo">
+          <ImageUploader
             value={logoImage}
-            onChange={(e) => setLogoImage(e.target.value)}
-            placeholder="https://example.com/logo.png"
-            className={inputCls}
+            onChange={setLogoImage}
+            slug={tenant.slug}
+            kind="logo"
+            previewAspect="3/1"
+            recommendation="Recommended: ~600 × 200 px PNG with transparent background. Up to 10 MB."
           />
         </Field>
         <Field label="Hero heading">
@@ -165,12 +168,17 @@ export default function EditSiteForm({
             className={inputCls}
           />
         </Field>
-        <Field label="Hero background image URL">
-          <input
+        <Field
+          label="Hero background image"
+          hint="The big photo behind the hero text. Wider-than-tall works best."
+        >
+          <ImageUploader
             value={heroBgImage}
-            onChange={(e) => setHeroBgImage(e.target.value)}
-            placeholder="https://images.unsplash.com/..."
-            className={inputCls}
+            onChange={setHeroBgImage}
+            slug={tenant.slug}
+            kind="hero"
+            previewAspect="21/9"
+            recommendation="Recommended: 2400 × 1100 px (≈ 21:9). Min 1600 × 720. PNG, JPG, or WEBP. Up to 10 MB."
           />
         </Field>
       </Section>

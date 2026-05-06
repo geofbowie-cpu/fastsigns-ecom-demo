@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import type { BankCategory } from "@/lib/product-bank"
+import ImageUploader from "../../_shared/ImageUploader"
 
 const slugify = (s: string) =>
   s
@@ -22,6 +23,7 @@ export default function NewSiteForm({ categories }: { categories: BankCategory[]
   const [primaryColor, setPrimaryColor] = useState("#1e3a5f")
   const [accentColor, setAccentColor] = useState("#f59e0b")
   const [logoImage, setLogoImage] = useState("")
+  const [heroBgImage, setHeroBgImage] = useState("")
   const [heroHeading, setHeroHeading] = useState("")
   const [heroSubheading, setHeroSubheading] = useState("")
   const [enabled, setEnabled] = useState<Set<string>>(new Set())
@@ -52,6 +54,7 @@ export default function NewSiteForm({ categories }: { categories: BankCategory[]
         accentColor,
       }
       if (logoImage.trim()) brand.logoImage = logoImage.trim()
+      if (heroBgImage.trim()) brand.heroBgImage = heroBgImage.trim()
       if (heroHeading.trim()) brand.heroHeading = heroHeading.trim()
       if (heroSubheading.trim()) brand.heroSubheading = heroSubheading.trim()
 
@@ -128,12 +131,14 @@ export default function NewSiteForm({ categories }: { categories: BankCategory[]
             <ColorInput value={accentColor} onChange={setAccentColor} />
           </Field>
         </div>
-        <Field label="Logo image URL (optional)" hint="Paste a hosted image URL. Leave blank to use text logo.">
-          <input
+        <Field label="Logo (optional)" hint="Drop a transparent PNG. Leave blank to use a text logo.">
+          <ImageUploader
             value={logoImage}
-            onChange={(e) => setLogoImage(e.target.value)}
-            placeholder="https://example.com/logo.png"
-            className={inputCls}
+            onChange={setLogoImage}
+            slug={slug}
+            kind="logo"
+            previewAspect="3/1"
+            recommendation="Recommended: ~600 × 200 px PNG with transparent background. Up to 10 MB."
           />
         </Field>
         <Field label="Hero heading (optional)">
@@ -151,6 +156,19 @@ export default function NewSiteForm({ categories }: { categories: BankCategory[]
             rows={2}
             placeholder="Order, approve, and track signage across all your locations…"
             className={inputCls}
+          />
+        </Field>
+        <Field
+          label="Hero background image (optional)"
+          hint="Big photo behind the hero text. Wider-than-tall works best."
+        >
+          <ImageUploader
+            value={heroBgImage}
+            onChange={setHeroBgImage}
+            slug={slug}
+            kind="hero"
+            previewAspect="21/9"
+            recommendation="Recommended: 2400 × 1100 px (≈ 21:9). Min 1600 × 720. PNG, JPG, or WEBP. Up to 10 MB."
           />
         </Field>
       </Section>
