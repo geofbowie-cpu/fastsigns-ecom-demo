@@ -2,21 +2,21 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import {
-  bankProducts,
-  categoriesForTenant,
-  type BankCategory,
-  type ProductOverrides,
-} from "@/lib/product-bank"
+import { type BankCategory, type ProductOverrides } from "@/lib/product-bank"
+import type { DbProduct } from "@/lib/products-db"
 import type { Tenant } from "@/lib/tenant"
 import ImageUploader from "../../../_shared/ImageUploader"
 
 export default function EditSiteForm({
   tenant,
   categories,
+  allProducts,
+  availableImportTags,
 }: {
   tenant: Tenant
   categories: BankCategory[]
+  allProducts: DbProduct[]
+  availableImportTags: string[]
 }) {
   const router = useRouter()
   const [name, setName] = useState(tenant.name)
@@ -41,6 +41,7 @@ export default function EditSiteForm({
     (tenant.brand?.heroBgImage as string) ?? ""
   )
   const [enabled, setEnabled] = useState<Set<string>>(new Set(tenant.enabled_categories))
+  const [importTags, setImportTags] = useState<Set<string>>(new Set(tenant.import_tags ?? []))
   const [productOverrides, setProductOverrides] = useState<ProductOverrides>(
     (tenant.product_overrides as ProductOverrides) ?? {}
   )
@@ -101,6 +102,7 @@ export default function EditSiteForm({
           name,
           brand,
           enabled_categories: Array.from(enabled),
+          import_tags: Array.from(importTags),
           product_overrides: productOverrides,
           admin_email: adminEmail || null,
         }),
@@ -235,6 +237,57 @@ export default function EditSiteForm({
         </Field>
       </Section>
 
+      {/* Import tags */}
+      {availableImportTags.length > 0 && (
+        <Section
+          title="Imported product sets"
+          hint="Select which imported batches to include on this site. Products in the batch are added to the catalog alongside any category-filtered products above."
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {availableImportTags.map((tag) => {
+              const on = importTags.has(tag)
+              return (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => {
+                    const next = new Set(importTags)
+                    if (next.has(tag)) next.delete(tag)
+                    else next.add(tag)
+                    setImportTags(next)
+                  }}
+                  className={`flex items-center gap-3 text-left p-3 rounded-lg border-2 transition-colors ${
+                    on
+                      ? "border-blue-600 bg-blue-50"
+                      : "border-gray-200 hover:border-gray-400 bg-white"
+                  }`}
+                >
+                  <span className="text-lg">📦</span>
+                  <span className="flex-1 min-w-0 text-sm font-mono font-semibold text-gray-900 truncate">
+                    {tag}
+                  </span>
+                  <span
+                    className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${
+                      on ? "bg-blue-600 border-blue-600" : "border-gray-300"
+                    }`}
+                  >
+                    {on && (
+                      <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3 text-white">
+                        <path d="M5 12l5 5L20 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+          <p className="text-xs text-gray-400 mt-1">
+            New imports are created on the{" "}
+            <a href="/master/import" className="text-blue-500 hover:underline">Import page</a>.
+          </p>
+        </Section>
+      )}
+
       <Section
         title="Product categories"
         hint="Pick which categories to show. Leave all unchecked to show everything."
@@ -287,7 +340,10 @@ export default function EditSiteForm({
         hint="Disable individual products, set a custom price, or swap in a product image. Disabled products are hidden from this site."
       >
         <ProductOverridesPanel
+          allProducts={allProducts}
+          allCategories={categories}
           enabledCategories={Array.from(enabled)}
+          enabledImportTags={Array.from(importTags)}
           overrides={productOverrides}
           onChange={patchProductOverride}
           tenantSlug={tenant.slug}
@@ -392,30 +448,48 @@ function ColorInput({
 // ── Product overrides panel ────────────────────────────────────
 
 function ProductOverridesPanel({
+  allProducts,
+  allCategories,
   enabledCategories,
+  enabledImportTags,
   overrides,
   onChange,
   tenantSlug,
 }: {
+  allProducts: DbProduct[]
+  allCategories: BankCategory[]
   enabledCategories: string[]
+  enabledImportTags: string[]
   overrides: ProductOverrides
   onChange: (slug: string, patch: Partial<ProductOverrides[string]>) => void
   tenantSlug: string
 }) {
-  const cats = categoriesForTenant(enabledCategories)
-  // If no categories selected, show all
-  const catsToShow = cats.length > 0 ? cats : []
+  const catMap = new Map(allCategories.map((c) => [c.slug, c]))
+
+  // Filter to relevant products (same logic as server-side getProducts)
+  const visibleProducts =
+    enabledCategories.length === 0 && enabledImportTags.length === 0
+      ? allProducts
+      : allProducts.filter((p) => {
+          if (p.import_tag === null) {
+            return enabledCategories.length === 0 || enabledCategories.includes(p.category)
+          }
+          return enabledImportTags.includes(p.import_tag ?? "")
+        })
+
+  // Derive distinct categories from visible products
+  const catSlugs = Array.from(new Set(visibleProducts.map((p) => p.category)))
 
   // Group products by category
-  const productsByCat = catsToShow.map((cat) => ({
-    cat,
-    products: bankProducts.filter((p) => p.category === cat.slug),
+  const productsByCat = catSlugs.map((slug) => ({
+    cat: catMap.get(slug) ?? { slug, name: slug, icon: "📦", description: "" },
+    products: visibleProducts.filter((p) => p.category === slug),
   }))
 
   if (productsByCat.length === 0) {
     return (
       <p className="text-xs text-gray-400 italic">
-        Enable at least one product category above to configure overrides.
+        Enable at least one product category or import tag above to configure overrides.
       </p>
     )
   }

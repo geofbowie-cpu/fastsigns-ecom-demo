@@ -2,7 +2,7 @@ import { notFound } from "next/navigation"
 import Link from "next/link"
 import { getTenantBySlug } from "@/lib/tenant"
 import { resolveBrand } from "@/lib/resolve-brand"
-import { categoriesForTenant, productsForTenant } from "@/lib/product-bank"
+import { getProducts, getCategories } from "@/lib/products-db"
 
 export async function generateMetadata({
   params,
@@ -29,8 +29,17 @@ export default async function TenantHomePage({
   if (!tenant) notFound()
 
   const b = resolveBrand(tenant.brand)
-  const cats = categoriesForTenant(tenant.enabled_categories)
-  const products = productsForTenant(tenant.enabled_categories, tenant.product_overrides)
+  const [cats, products] = await Promise.all([
+    getCategories({
+      enabledCategories: tenant.enabled_categories,
+      importTags: tenant.import_tags,
+    }),
+    getProducts({
+      enabledCategories: tenant.enabled_categories,
+      importTags: tenant.import_tags,
+      overrides: tenant.product_overrides,
+    }),
+  ])
   const featured = products.filter((p) => p.featured).slice(0, 4)
 
   const trustBadges = [b.trustBadge1, b.trustBadge2, b.trustBadge3, b.trustBadge4].filter(

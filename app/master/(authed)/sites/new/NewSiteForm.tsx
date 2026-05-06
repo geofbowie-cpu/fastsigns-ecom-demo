@@ -13,7 +13,13 @@ const slugify = (s: string) =>
     .replace(/^-+|-+$/g, "")
     .replace(/-{2,}/g, "-")
 
-export default function NewSiteForm({ categories }: { categories: BankCategory[] }) {
+export default function NewSiteForm({
+  categories,
+  availableImportTags,
+}: {
+  categories: BankCategory[]
+  availableImportTags: string[]
+}) {
   const router = useRouter()
 
   const [name, setName] = useState("")
@@ -27,6 +33,7 @@ export default function NewSiteForm({ categories }: { categories: BankCategory[]
   const [heroHeading, setHeroHeading] = useState("")
   const [heroSubheading, setHeroSubheading] = useState("")
   const [enabled, setEnabled] = useState<Set<string>>(new Set())
+  const [importTags, setImportTags] = useState<Set<string>>(new Set())
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [domain, setDomain] = useState("")
@@ -114,6 +121,7 @@ export default function NewSiteForm({ categories }: { categories: BankCategory[]
           name,
           brand,
           enabled_categories: Array.from(enabled),
+          import_tags: Array.from(importTags),
           admin_email: adminEmail || null,
         }),
       })
@@ -309,6 +317,45 @@ export default function NewSiteForm({ categories }: { categories: BankCategory[]
           })}
         </div>
       </Section>
+
+      {/* Imported product sets */}
+      {availableImportTags.length > 0 && (
+        <Section
+          title="Imported product sets"
+          hint="Optionally include products from a previous import batch."
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {availableImportTags.map((tag) => {
+              const on = importTags.has(tag)
+              return (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => {
+                    const next = new Set(importTags)
+                    if (next.has(tag)) next.delete(tag)
+                    else next.add(tag)
+                    setImportTags(next)
+                  }}
+                  className={`flex items-center gap-3 text-left p-3 rounded-lg border-2 transition-colors ${
+                    on ? "border-blue-600 bg-blue-50" : "border-gray-200 hover:border-gray-400 bg-white"
+                  }`}
+                >
+                  <span className="text-lg">📦</span>
+                  <span className="flex-1 min-w-0 text-sm font-mono font-semibold text-gray-900 truncate">{tag}</span>
+                  <span className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${on ? "bg-blue-600 border-blue-600" : "border-gray-300"}`}>
+                    {on && (
+                      <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3 text-white">
+                        <path d="M5 12l5 5L20 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </Section>
+      )}
 
       {error && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">

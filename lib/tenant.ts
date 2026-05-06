@@ -62,6 +62,7 @@ export type Tenant = {
   brand: TenantBrand
   enabled_categories: string[]
   product_overrides: ProductOverrides
+  import_tags: string[]
   admin_email: string | null
   archived: boolean
   created_at: string

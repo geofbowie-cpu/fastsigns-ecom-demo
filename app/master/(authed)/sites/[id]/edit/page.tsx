@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { adminClient } from "@/lib/supabase"
-import { bankCategories } from "@/lib/product-bank"
+import { getAllCategories, getAllProducts, listImportTags } from "@/lib/products-db"
 import EditSiteForm from "./EditSiteForm"
 import type { Tenant } from "@/lib/tenant"
 
@@ -11,11 +11,12 @@ export default async function EditSitePage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const { data, error } = await adminClient()
-    .from("tenants")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle()
+  const [{ data, error }, categories, allProducts, availableImportTags] = await Promise.all([
+    adminClient().from("tenants").select("*").eq("id", id).maybeSingle(),
+    getAllCategories(),
+    getAllProducts(),
+    listImportTags(),
+  ])
   if (error || !data) notFound()
   const tenant = data as Tenant
 
@@ -41,7 +42,12 @@ export default async function EditSitePage({
           </div>
         </div>
       </div>
-      <EditSiteForm tenant={tenant} categories={bankCategories} />
+      <EditSiteForm
+        tenant={tenant}
+        categories={categories}
+        allProducts={allProducts}
+        availableImportTags={availableImportTags}
+      />
     </div>
   )
 }

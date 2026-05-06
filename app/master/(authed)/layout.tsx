@@ -18,6 +18,12 @@ export default async function AuthedLayout({
           </Link>
           <div className="flex items-center gap-4">
             <Link
+              href="/master/import"
+              className="text-gray-300 hover:text-white text-xs font-medium"
+            >
+              Import products
+            </Link>
+            <Link
               href="/master/sites/new"
               className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg"
             >

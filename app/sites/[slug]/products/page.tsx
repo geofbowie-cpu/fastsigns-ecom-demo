@@ -2,7 +2,7 @@ import { notFound } from "next/navigation"
 import Link from "next/link"
 import { getTenantBySlug } from "@/lib/tenant"
 import { resolveBrand } from "@/lib/resolve-brand"
-import { categoriesForTenant, productsForTenant } from "@/lib/product-bank"
+import { getProducts, getCategories } from "@/lib/products-db"
 
 export default async function TenantProductsPage({
   params,
@@ -17,8 +17,17 @@ export default async function TenantProductsPage({
   if (!tenant) notFound()
 
   const b = resolveBrand(tenant.brand)
-  const cats = categoriesForTenant(tenant.enabled_categories)
-  const all = productsForTenant(tenant.enabled_categories, tenant.product_overrides)
+  const [cats, all] = await Promise.all([
+    getCategories({
+      enabledCategories: tenant.enabled_categories,
+      importTags: tenant.import_tags,
+    }),
+    getProducts({
+      enabledCategories: tenant.enabled_categories,
+      importTags: tenant.import_tags,
+      overrides: tenant.product_overrides,
+    }),
+  ])
   const filtered = category ? all.filter((p) => p.category === category) : all
 
   return (
