@@ -397,6 +397,9 @@ export default function EditSiteForm({
           overrides={productOverrides}
           onChange={patchProductOverride}
           tenantSlug={tenant.slug}
+          brandLogoUrl={logoImage}
+          brandPrimaryColor={primaryColor}
+          brandCompanyName={name}
         />
       </Section>
 
@@ -610,6 +613,107 @@ function ColorInput({
         onChange={(e) => onChange(e.target.value)}
         className={`${inputCls} font-mono`}
       />
+    </div>
+  )
+}
+
+// ── Brand image (Sharp compositing) ──────────────────────────
+
+function BrandImageButton({
+  tenantSlug,
+  productImageUrl,
+  logoUrl,
+  primaryColor,
+  companyName,
+  onUseImage,
+}: {
+  tenantSlug: string
+  productImageUrl: string
+  logoUrl: string
+  primaryColor: string
+  companyName: string
+  onUseImage: (url: string) => void
+}) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+
+  async function handleBrand() {
+    if (!productImageUrl.trim()) {
+      setError("Product has no image to brand")
+      return
+    }
+    setBusy(true)
+    setError(null)
+    setPreview(null)
+    try {
+      const res = await fetch("/api/master/mockup/brand", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product_image_url: productImageUrl,
+          logo_url: logoUrl || undefined,
+          primary_color: primaryColor,
+          company_name: companyName,
+          tenant_slug: tenantSlug,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? "Brand failed")
+      setPreview(json.url)
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (preview) {
+    return (
+      <div className="mt-2 space-y-1.5">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={preview} alt="Branded preview" className="w-full rounded border border-gray-200 object-cover" />
+        <div className="flex gap-1.5">
+          <button
+            type="button"
+            onClick={() => { onUseImage(preview); setPreview(null) }}
+            className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold py-1.5 rounded"
+          >
+            ✓ Use this
+          </button>
+          <button
+            type="button"
+            onClick={() => setPreview(null)}
+            className="text-xs text-gray-400 hover:text-gray-600 px-2"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-1">
+      <button
+        type="button"
+        disabled={busy || !productImageUrl.trim()}
+        onClick={handleBrand}
+        title={!productImageUrl.trim() ? "Product has no image" : "Apply brand bar + logo to this product image"}
+        className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-40 font-semibold flex items-center gap-1"
+      >
+        {busy ? (
+          <>
+            <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="30 70" />
+            </svg>
+            Branding…
+          </>
+        ) : (
+          <>🏷 Apply branding</>
+        )}
+      </button>
+      {error && <p className="text-[10px] text-red-500 mt-0.5">{error}</p>}
     </div>
   )
 }
@@ -883,6 +987,9 @@ function ProductOverridesPanel({
   overrides,
   onChange,
   tenantSlug,
+  brandLogoUrl,
+  brandPrimaryColor,
+  brandCompanyName,
 }: {
   allProducts: DbProduct[]
   allCategories: BankCategory[]
@@ -891,6 +998,9 @@ function ProductOverridesPanel({
   overrides: ProductOverrides
   onChange: (slug: string, patch: Partial<ProductOverrides[string]>) => void
   tenantSlug: string
+  brandLogoUrl: string
+  brandPrimaryColor: string
+  brandCompanyName: string
 }) {
   const catMap = new Map(allCategories.map((c) => [c.slug, c]))
 
@@ -1054,6 +1164,14 @@ function ProductOverridesPanel({
                         kind="logo"
                         previewAspect="4/3"
                         recommendation="Product image. PNG/JPG/WEBP. Up to 10 MB."
+                      />
+                      <BrandImageButton
+                        tenantSlug={tenantSlug}
+                        productImageUrl={ov.imageUrl ?? p.imageUrl ?? ""}
+                        logoUrl={brandLogoUrl}
+                        primaryColor={brandPrimaryColor}
+                        companyName={brandCompanyName}
+                        onUseImage={(url) => onChange(p.slug, { imageUrl: url })}
                       />
                       <MockupGenerator
                         tenantSlug={tenantSlug}

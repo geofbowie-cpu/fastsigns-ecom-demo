@@ -50,7 +50,7 @@ export async function GET() {
       })),
     }))
 
-    return NextResponse.json({ templates })
+    return NextResponse.json({ templates, _raw: json })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
   }
