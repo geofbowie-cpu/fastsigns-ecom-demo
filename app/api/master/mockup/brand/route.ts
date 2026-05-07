@@ -3,32 +3,45 @@ import { isMasterAuthed } from "@/lib/master-auth"
 import { createClient } from "@supabase/supabase-js"
 import sharp from "sharp"
 
-// Force Node.js runtime — Sharp uses native bindings, not available in Edge
 export const runtime = "nodejs"
 
-const OUTPUT_WIDTH = 800
-const OUTPUT_HEIGHT = 600
-const LOGO_MAX_W = 180
-const LOGO_MAX_H = 80
-const LOGO_PADDING = 16
-const BAR_HEIGHT = 48
-
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
-  const clean = hex.replace("#", "")
-  const full = clean.length === 3
-    ? clean.split("").map((c) => c + c).join("")
-    : clean
-  return {
-    r: parseInt(full.slice(0, 2), 16),
-    g: parseInt(full.slice(2, 4), 16),
-    b: parseInt(full.slice(4, 6), 16),
-  }
-}
+// Logo occupies up to this fraction of the image width/height
+const LOGO_SCALE = 0.38
+// White pill behind logo: padding around logo in px
+const PILL_PAD_X = 24
+const PILL_PAD_Y = 16
+// Pill opacity 0–255
+const PILL_ALPHA = 220
 
 async function fetchBuffer(url: string): Promise<Buffer> {
   const res = await fetch(url)
   if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`)
   return Buffer.from(await res.arrayBuffer())
+}
+
+// position: center | bottom-right | bottom-left | top-right | top-left
+type Position = "center" | "bottom-right" | "bottom-left" | "top-right" | "top-left"
+
+function logoOffset(
+  pos: Position,
+  imgW: number,
+  imgH: number,
+  pillW: number,
+  pillH: number,
+  margin = 24
+): { top: number; left: number } {
+  switch (pos) {
+    case "top-left":     return { top: margin, left: margin }
+    case "top-right":    return { top: margin, left: imgW - pillW - margin }
+    case "bottom-left":  return { top: imgH - pillH - margin, left: margin }
+    case "bottom-right": return { top: imgH - pillH - margin, left: imgW - pillW - margin }
+    case "center":
+    default:
+      return {
+        top:  Math.round((imgH - pillH) / 2),
+        left: Math.round((imgW - pillW) / 2),
+      }
+  }
 }
 
 export async function POST(req: Request) {
@@ -42,6 +55,7 @@ export async function POST(req: Request) {
     primary_color?: string
     company_name?: string
     tenant_slug: string
+    position?: Position
   }
   try {
     body = await req.json()
@@ -55,100 +69,107 @@ export async function POST(req: Request) {
     primary_color = "#1e3a5f",
     company_name = "",
     tenant_slug,
+    position = "center",
   } = body
 
   if (!product_image_url) {
     return NextResponse.json({ error: "product_image_url is required" }, { status: 400 })
   }
 
+  if (!logo_url?.trim() && !company_name.trim()) {
+    return NextResponse.json({ error: "Provide a logo URL or company name to brand with" }, { status: 400 })
+  }
+
   try {
-    const { r, g, b } = hexToRgb(primary_color)
-
-    // 1. Fetch and resize the product image to fill canvas
+    // 1. Fetch product image and get its natural dimensions
     const productBuf = await fetchBuffer(product_image_url)
-    const base = await sharp(productBuf)
-      .resize(OUTPUT_WIDTH, OUTPUT_HEIGHT - BAR_HEIGHT, {
-        fit: "cover",
-        position: "center",
-      })
-      .toBuffer()
+    const productMeta = await sharp(productBuf).metadata()
+    const imgW = productMeta.width ?? 800
+    const imgH = productMeta.height ?? 600
 
-    // 2. Build the brand bar (solid color strip at bottom)
-    const bar = await sharp({
-      create: {
-        width: OUTPUT_WIDTH,
-        height: BAR_HEIGHT,
-        channels: 4,
-        background: { r, g, b, alpha: 1 },
-      },
-    })
-      .png()
-      .toBuffer()
+    // Max logo size based on image dimensions
+    const logoMaxW = Math.round(imgW * LOGO_SCALE)
+    const logoMaxH = Math.round(imgH * LOGO_SCALE)
 
-    // 3. If company name, render it as SVG text over the bar
-    const labelSvg = company_name.trim()
-      ? Buffer.from(
-          `<svg width="${OUTPUT_WIDTH}" height="${BAR_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
-            <text
-              x="${logo_url ? LOGO_MAX_W + LOGO_PADDING * 2 + 8 : 20}"
-              y="${BAR_HEIGHT / 2 + 7}"
-              font-family="Arial, Helvetica, sans-serif"
-              font-size="20"
-              font-weight="bold"
-              fill="white"
-              opacity="0.9"
-            >${company_name.trim().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</text>
-          </svg>`
-        )
-      : null
+    // 2. Build the logo/text layer
+    let logoLayer: Buffer | null = null
+    let logoW = 0
+    let logoH = 0
 
-    // 4. Stack base image + bar into full canvas
-    const composite: sharp.OverlayOptions[] = [
-      { input: bar, top: OUTPUT_HEIGHT - BAR_HEIGHT, left: 0 },
-    ]
-
-    if (labelSvg) {
-      composite.push({
-        input: labelSvg,
-        top: OUTPUT_HEIGHT - BAR_HEIGHT,
-        left: 0,
-      })
-    }
-
-    // 5. If logo URL provided, fetch + resize + place in bar
     if (logo_url?.trim()) {
       try {
-        const logoBuf = await fetchBuffer(logo_url.trim())
-        const resizedLogo = await sharp(logoBuf)
-          .resize(LOGO_MAX_W, LOGO_MAX_H, { fit: "inside", background: { r: 0, g: 0, b: 0, alpha: 0 } })
+        const rawLogo = await fetchBuffer(logo_url.trim())
+        logoLayer = await sharp(rawLogo)
+          .resize(logoMaxW, logoMaxH, {
+            fit: "inside",
+            withoutEnlargement: false,
+          })
           .png()
           .toBuffer()
 
-        const logoMeta = await sharp(resizedLogo).metadata()
-        const logoH = logoMeta.height ?? LOGO_MAX_H
-        const logoTop = OUTPUT_HEIGHT - BAR_HEIGHT + Math.floor((BAR_HEIGHT - logoH) / 2)
-
-        composite.push({
-          input: resizedLogo,
-          top: Math.max(0, logoTop),
-          left: LOGO_PADDING,
-        })
+        const lm = await sharp(logoLayer).metadata()
+        logoW = lm.width ?? logoMaxW
+        logoH = lm.height ?? logoMaxH
       } catch (e) {
-        // Logo fetch failed — skip it, still produce branded image
-        console.warn("Logo fetch failed, skipping:", e)
+        console.warn("Logo fetch/resize failed:", e)
       }
     }
 
-    const finalBuf = await sharp({
-      create: {
-        width: OUTPUT_WIDTH,
-        height: OUTPUT_HEIGHT,
-        channels: 4,
-        background: { r: 0, g: 0, b: 0, alpha: 0 },
-      },
+    // Fallback to company name text if no logo
+    if (!logoLayer && company_name.trim()) {
+      const fontSize = Math.max(24, Math.round(imgW * 0.05))
+      const textW = Math.round(company_name.length * fontSize * 0.6)
+      const textH = Math.round(fontSize * 1.4)
+      const hex = primary_color.replace("#", "")
+      logoLayer = Buffer.from(
+        `<svg width="${textW}" height="${textH}" xmlns="http://www.w3.org/2000/svg">
+          <text
+            x="0" y="${textH - Math.round(textH * 0.2)}"
+            font-family="Arial, Helvetica, sans-serif"
+            font-size="${fontSize}"
+            font-weight="900"
+            fill="#${hex}"
+          >${company_name.trim().replace(/&/g, "&amp;").replace(/</g, "&lt;")}</text>
+        </svg>`
+      )
+      logoW = textW
+      logoH = textH
+    }
+
+    if (!logoLayer) {
+      return NextResponse.json({ error: "Could not build logo layer" }, { status: 500 })
+    }
+
+    // 3. Build a white rounded-rect pill behind the logo for contrast
+    const pillW = logoW + PILL_PAD_X * 2
+    const pillH = logoH + PILL_PAD_Y * 2
+    const radius = Math.round(Math.min(pillW, pillH) * 0.15)
+
+    const pillSvg = Buffer.from(
+      `<svg width="${pillW}" height="${pillH}" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="0" width="${pillW}" height="${pillH}"
+          rx="${radius}" ry="${radius}"
+          fill="white" fill-opacity="${(PILL_ALPHA / 255).toFixed(3)}" />
+      </svg>`
+    )
+
+    // 4. Composite: pill first, then logo on top of pill
+    const overlay = await sharp({
+      create: { width: pillW, height: pillH, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
     })
-      .composite([{ input: base, top: 0, left: 0 }, ...composite])
-      .jpeg({ quality: 88 })
+      .composite([
+        { input: pillSvg, top: 0, left: 0 },
+        { input: logoLayer, top: PILL_PAD_Y, left: PILL_PAD_X },
+      ])
+      .png()
+      .toBuffer()
+
+    // 5. Place the overlay on the product image at the chosen position
+    const { top, left } = logoOffset(position, imgW, imgH, pillW, pillH)
+
+    const finalBuf = await sharp(productBuf)
+      .composite([{ input: overlay, top: Math.max(0, top), left: Math.max(0, left) }])
+      .jpeg({ quality: 90 })
       .toBuffer()
 
     // 6. Upload to Supabase Storage
