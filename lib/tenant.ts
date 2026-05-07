@@ -48,6 +48,11 @@ export type TenantBrand = {
   supportEmail?: string
   // Display
   showPricing?: boolean
+  // Live portal — contact / ordering
+  contactName?: string
+  contactEmail?: string
+  contactPhone?: string
+  orderCtaText?: string
   // Procurement
   procurementSystem?: "COUPA" | "SAP Ariba" | "Oracle" | "Custom" | null
   procurementLabel?: string
@@ -63,6 +68,7 @@ export type Tenant = {
   enabled_categories: string[]
   product_overrides: ProductOverrides
   import_tags: string[]
+  status: "demo" | "live"
   admin_email: string | null
   archived: boolean
   created_at: string
@@ -126,7 +132,7 @@ export async function createTenant(input: TenantInput): Promise<Tenant> {
 
 export async function updateTenant(
   id: string,
-  patch: Partial<TenantInput> & { archived?: boolean }
+  patch: Partial<TenantInput> & { archived?: boolean; status?: "demo" | "live" }
 ): Promise<Tenant> {
   const { data, error } = await adminClient()
     .from("tenants")
@@ -142,6 +148,14 @@ export async function archiveTenant(id: string): Promise<void> {
   const { error } = await adminClient()
     .from("tenants")
     .update({ archived: true })
+    .eq("id", id)
+  if (error) throw new Error(error.message)
+}
+
+export async function deleteTenant(id: string): Promise<void> {
+  const { error } = await adminClient()
+    .from("tenants")
+    .delete()
     .eq("id", id)
   if (error) throw new Error(error.message)
 }

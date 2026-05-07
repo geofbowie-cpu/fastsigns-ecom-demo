@@ -36,9 +36,21 @@ export default async function TenantProductsPage({
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {tenant.status === "live" && b.contactEmail && (
+        <div className="bg-gray-900 text-white text-xs px-4 py-2 flex items-center justify-end gap-4">
+          {b.contactName && <span className="text-gray-400">Your rep: <span className="text-white font-medium">{b.contactName}</span></span>}
+          <a href={`mailto:${b.contactEmail}`} className="text-blue-300 hover:text-blue-200">{b.contactEmail}</a>
+          {b.contactPhone && <a href={`tel:${b.contactPhone}`} className="text-gray-300 hover:text-white">{b.contactPhone}</a>}
+        </div>
+      )}
       {isAdmin && (
         <div className="sticky top-0 z-50 bg-gray-900 border-b border-yellow-500 text-white text-xs flex items-center justify-between px-4 py-2">
-          <span className="text-yellow-400 font-semibold">⚡ Admin preview — {tenant.name}</span>
+          <span className="text-yellow-400 font-semibold">
+            ⚡ Admin preview — {tenant.name}
+            <span className={`ml-2 px-1.5 py-0.5 rounded text-xs font-semibold ${tenant.status === "live" ? "bg-green-500 text-white" : "bg-blue-500 text-white"}`}>
+              {tenant.status === "live" ? "LIVE" : "DEMO"}
+            </span>
+          </span>
           <div className="flex items-center gap-4">
             <Link
               href={`/master/sites/${tenant.id}/edit`}
@@ -129,12 +141,21 @@ export default async function TenantProductsPage({
               <div className="p-4">
                 <h3 className="font-bold text-gray-900 text-sm">{p.name}</h3>
                 <p className="text-xs text-gray-500 mt-1 line-clamp-2">{p.shortDesc}</p>
-                {b.showPricing && (
+                {b.showPricing && tenant.status !== "live" && (
                   <div className="mt-3 flex items-baseline gap-1">
                     <span className="text-xs text-gray-500">from</span>
                     <span className="font-bold text-gray-900">${p.startingPrice}</span>
                     <span className="text-xs text-gray-500">/ {p.unit}</span>
                   </div>
+                )}
+                {tenant.status === "live" && b.contactEmail && (
+                  <a
+                    href={`mailto:${b.contactEmail}?subject=Order inquiry: ${p.name}`}
+                    className="mt-3 inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg text-white"
+                    style={{ backgroundColor: b.primaryColor }}
+                  >
+                    {b.orderCtaText} →
+                  </a>
                 )}
               </div>
             </div>

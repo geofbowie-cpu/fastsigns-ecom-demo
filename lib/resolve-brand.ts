@@ -101,6 +101,10 @@ export function resolveBrand(brand: TenantBrand) {
     footerTagline: brand.footerTagline ?? GENERIC_DEFAULTS.footerTagline,
     supportEmail: brand.supportEmail ?? GENERIC_DEFAULTS.supportEmail,
     showPricing: brand.showPricing ?? true,
+    contactName: brand.contactName ?? "",
+    contactEmail: brand.contactEmail ?? "",
+    contactPhone: brand.contactPhone ?? "",
+    orderCtaText: brand.orderCtaText ?? "Contact to order",
   }
 }
 

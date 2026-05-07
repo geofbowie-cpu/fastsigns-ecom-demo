@@ -84,11 +84,16 @@ export default async function MasterDashboard() {
                 <div className="p-4">
                   <div className="flex items-center justify-between gap-2">
                     <h3 className="font-bold text-gray-900 truncate">{t.name}</h3>
-                    <span className="text-xs text-gray-500 font-mono shrink-0">
-                      /sites/{t.slug}
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                      t.status === "live"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-blue-100 text-blue-700"
+                    }`}>
+                      {t.status === "live" ? "🟢 Live" : "🔵 Demo"}
                     </span>
                   </div>
-                  <div className="mt-2 text-xs text-gray-500">
+                  <div className="mt-1.5 text-xs text-gray-400 font-mono">/sites/{t.slug}</div>
+                  <div className="mt-1.5 text-xs text-gray-500">
                     {t.enabled_categories.length === 0
                       ? "All categories"
                       : `${t.enabled_categories.length} categor${t.enabled_categories.length === 1 ? "y" : "ies"}`}

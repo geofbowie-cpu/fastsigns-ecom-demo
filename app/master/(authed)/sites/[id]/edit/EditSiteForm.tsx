@@ -45,6 +45,18 @@ export default function EditSiteForm({
   const [productOverrides, setProductOverrides] = useState<ProductOverrides>(
     (tenant.product_overrides as ProductOverrides) ?? {}
   )
+  // Status
+  const [status, setStatus] = useState<"demo" | "live">(tenant.status ?? "demo")
+  const [contactName, setContactName] = useState((tenant.brand?.contactName as string) ?? "")
+  const [contactEmail, setContactEmail] = useState((tenant.brand?.contactEmail as string) ?? "")
+  const [contactPhone, setContactPhone] = useState((tenant.brand?.contactPhone as string) ?? "")
+  const [orderCtaText, setOrderCtaText] = useState(
+    (tenant.brand?.orderCtaText as string) ?? "Contact to order"
+  )
+  // Delete confirmation
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteSlugInput, setDeleteSlugInput] = useState("")
+
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -85,6 +97,10 @@ export default function EditSiteForm({
         primaryColor,
         accentColor,
         showPricing,
+        contactName: contactName.trim() || undefined,
+        contactEmail: contactEmail.trim() || undefined,
+        contactPhone: contactPhone.trim() || undefined,
+        orderCtaText: orderCtaText.trim() || "Contact to order",
       }
       if (logoImage.trim()) brand.logoImage = logoImage.trim()
       else delete (brand as any).logoImage
@@ -101,6 +117,7 @@ export default function EditSiteForm({
         body: JSON.stringify({
           name,
           brand,
+          status,
           enabled_categories: Array.from(enabled),
           import_tags: Array.from(importTags),
           product_overrides: productOverrides,
@@ -121,13 +138,37 @@ export default function EditSiteForm({
   }
 
   async function archive() {
-    if (!confirm(`Archive "${name}"? It will stop being public but can be restored.`)) return
+    if (!confirm(`Archive "${name}"? It will be hidden but can be restored from the DB.`)) return
     setBusy(true)
     try {
-      const res = await fetch(`/api/master/tenants/${tenant.id}`, { method: "DELETE" })
+      const res = await fetch(`/api/master/tenants/${tenant.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ archived: true }),
+      })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
         setError(j.error ?? "Archive failed")
+        return
+      }
+      router.push("/master")
+      router.refresh()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function permanentDelete() {
+    if (deleteSlugInput !== tenant.slug) return
+    setBusy(true)
+    try {
+      const res = await fetch(`/api/master/tenants/${tenant.id}?permanent=true`, {
+        method: "DELETE",
+      })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        setError(j.error ?? "Delete failed")
+        setShowDeleteConfirm(false)
         return
       }
       router.push("/master")
@@ -350,6 +391,135 @@ export default function EditSiteForm({
         />
       </Section>
 
+      {/* Status / promote */}
+      <Section
+        title={status === "live" ? "🟢 Live portal" : "🔵 Demo site"}
+        hint={
+          status === "live"
+            ? "This site is live. Visitors see product cards with a contact-to-order CTA. Fill in the rep contact details below."
+            : "This site is in demo mode — showcase only. Promote to live when the prospect becomes a customer."
+        }
+      >
+        {/* Contact fields — always visible so you can fill them before promoting */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field label="Rep / contact name">
+            <input
+              value={contactName}
+              onChange={(e) => setContactName(e.target.value)}
+              placeholder="Jane Smith"
+              className={inputCls}
+            />
+          </Field>
+          <Field label="Contact email">
+            <input
+              type="email"
+              value={contactEmail}
+              onChange={(e) => setContactEmail(e.target.value)}
+              placeholder="jane@fastsigns.com"
+              className={inputCls}
+            />
+          </Field>
+          <Field label="Contact phone (optional)">
+            <input
+              value={contactPhone}
+              onChange={(e) => setContactPhone(e.target.value)}
+              placeholder="(555) 555-0100"
+              className={inputCls}
+            />
+          </Field>
+          <Field label="Order CTA text">
+            <input
+              value={orderCtaText}
+              onChange={(e) => setOrderCtaText(e.target.value)}
+              placeholder="Contact to order"
+              className={inputCls}
+            />
+          </Field>
+        </div>
+
+        <div className="pt-2 flex items-center gap-3">
+          {status === "demo" ? (
+            <button
+              type="button"
+              disabled={busy || !contactEmail.trim()}
+              onClick={() => setStatus("live")}
+              title={!contactEmail.trim() ? "Add a contact email first" : undefined}
+              className="bg-green-600 hover:bg-green-500 disabled:opacity-40 text-white text-sm font-semibold px-5 py-2 rounded-lg"
+            >
+              🚀 Promote to live
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setStatus("demo")}
+              className="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-semibold px-5 py-2 rounded-lg"
+            >
+              ↩ Demote to demo
+            </button>
+          )}
+          <span className="text-xs text-gray-400">
+            {status === "demo"
+              ? "Contact email required to promote"
+              : "Demoting hides the order CTAs but keeps contact info saved"}
+          </span>
+        </div>
+      </Section>
+
+      {/* Danger zone */}
+      <section className="bg-white rounded-xl border border-red-200 p-5">
+        <h2 className="text-sm font-bold text-red-700 mb-3">Danger zone</h2>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={archive}
+            disabled={busy}
+            className="text-sm border border-red-300 text-red-600 hover:bg-red-50 font-medium px-4 py-2 rounded-lg"
+          >
+            Archive site
+          </button>
+          <button
+            type="button"
+            onClick={() => { setShowDeleteConfirm(true); setDeleteSlugInput("") }}
+            disabled={busy}
+            className="text-sm bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded-lg"
+          >
+            Delete permanently
+          </button>
+        </div>
+
+        {showDeleteConfirm && (
+          <div className="mt-4 p-4 bg-red-50 border border-red-300 rounded-lg space-y-3">
+            <p className="text-sm text-red-700 font-medium">
+              This cannot be undone. Type <code className="font-mono bg-white px-1 rounded border border-red-200">{tenant.slug}</code> to confirm.
+            </p>
+            <div className="flex items-center gap-2">
+              <input
+                value={deleteSlugInput}
+                onChange={(e) => setDeleteSlugInput(e.target.value)}
+                placeholder={tenant.slug}
+                className="flex-1 px-3 py-2 border border-red-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-400"
+              />
+              <button
+                type="button"
+                onClick={permanentDelete}
+                disabled={busy || deleteSlugInput !== tenant.slug}
+                className="bg-red-700 hover:bg-red-800 disabled:opacity-40 text-white text-sm font-semibold px-4 py-2 rounded-lg whitespace-nowrap"
+              >
+                {busy ? "Deleting…" : "Confirm delete"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+
       {error && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
           {error}
@@ -365,16 +535,6 @@ export default function EditSiteForm({
           {busy ? "Saving…" : "Save"}
         </button>
         {saved && <span className="text-sm text-green-600 font-medium">✓ Saved</span>}
-        <div className="ml-auto">
-          <button
-            type="button"
-            onClick={archive}
-            disabled={busy}
-            className="text-sm text-red-600 hover:text-red-700 font-medium px-3 py-2.5"
-          >
-            Archive
-          </button>
-        </div>
       </div>
     </form>
   )
