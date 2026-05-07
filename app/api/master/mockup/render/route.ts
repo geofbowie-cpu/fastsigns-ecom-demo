@@ -33,7 +33,7 @@ export async function POST(req: Request) {
   const dmRes = await fetch(`${DM_BASE}/renders`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      "x-api-key": apiKey,
       "Content-Type": "application/json",
       Accept: "application/json",
     },

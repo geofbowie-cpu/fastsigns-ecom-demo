@@ -16,7 +16,7 @@ export async function GET() {
   try {
     const res = await fetch(`${DM_BASE}/mockups?per_page=100`, {
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        "x-api-key": apiKey,
         Accept: "application/json",
       },
       next: { revalidate: 300 }, // cache 5 min — template list rarely changes
