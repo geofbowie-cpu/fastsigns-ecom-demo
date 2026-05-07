@@ -6,6 +6,7 @@ import { type BankCategory, type ProductOverrides } from "@/lib/product-bank"
 import type { DbProduct } from "@/lib/products-db"
 import type { Tenant } from "@/lib/tenant"
 import ImageUploader from "../../../_shared/ImageUploader"
+import MockupEditor from "./MockupEditor"
 
 // ── Dynamic Mockups types ──────────────────────────────────────
 type DmSmartObject = { uuid: string; name: string }
@@ -619,22 +620,12 @@ function ColorInput({
 
 // ── Brand image (Sharp compositing) ──────────────────────────
 
-type BrandPosition = "center" | "bottom-right" | "bottom-left" | "top-right" | "top-left"
-
-const POSITION_OPTIONS: { value: BrandPosition; label: string }[] = [
-  { value: "center",       label: "⊙ Center" },
-  { value: "bottom-right", label: "↘ Bottom right" },
-  { value: "bottom-left",  label: "↙ Bottom left" },
-  { value: "top-right",    label: "↗ Top right" },
-  { value: "top-left",     label: "↖ Top left" },
-]
+// BrandImageButton replaced by MockupEditor modal — see below
 
 function BrandImageButton({
   tenantSlug,
   productImageUrl,
   logoUrl,
-  primaryColor,
-  companyName,
   onUseImage,
 }: {
   tenantSlug: string
@@ -645,127 +636,28 @@ function BrandImageButton({
   onUseImage: (url: string) => void
 }) {
   const [open, setOpen] = useState(false)
-  const [position, setPosition] = useState<BrandPosition>("center")
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [preview, setPreview] = useState<string | null>(null)
 
-  async function handleBrand() {
-    if (!productImageUrl.trim()) return
-    setBusy(true)
-    setError(null)
-    setPreview(null)
-    try {
-      const res = await fetch("/api/master/mockup/brand", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          product_image_url: productImageUrl,
-          logo_url: logoUrl || undefined,
-          primary_color: primaryColor,
-          company_name: companyName,
-          tenant_slug: tenantSlug,
-          position,
-        }),
-      })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error ?? "Brand failed")
-      setPreview(json.url)
-    } catch (e: any) {
-      setError(e.message)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  if (!open) {
-    return (
+  return (
+    <>
       <button
         type="button"
         disabled={!productImageUrl.trim()}
         onClick={() => setOpen(true)}
-        title={!productImageUrl.trim() ? "Product has no image" : "Overlay logo on this product image"}
+        title={!productImageUrl.trim() ? "Product needs an image first" : "Open logo placement editor"}
         className="mt-1 text-xs text-blue-600 hover:text-blue-800 disabled:opacity-40 font-semibold flex items-center gap-1"
       >
-        🏷 Apply branding
+        🏷 Place logo on image
       </button>
-    )
-  }
-
-  return (
-    <div className="mt-2 border border-blue-200 rounded-lg bg-blue-50 p-3 space-y-2.5">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-bold text-blue-800">Apply branding</span>
-        <button type="button" onClick={() => { setOpen(false); setPreview(null); setError(null) }}
-          className="text-xs text-gray-400 hover:text-gray-600">✕</button>
-      </div>
-
-      {/* Position picker */}
-      <div>
-        <span className="block text-xs font-semibold text-gray-700 mb-1">Logo position</span>
-        <div className="grid grid-cols-3 gap-1">
-          {POSITION_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => { setPosition(opt.value); setPreview(null) }}
-              className={`text-[11px] py-1 px-1.5 rounded border font-medium transition-colors ${
-                position === opt.value
-                  ? "border-blue-500 bg-blue-100 text-blue-800"
-                  : "border-gray-200 bg-white text-gray-600 hover:border-blue-300"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Generate */}
-      {!preview && (
-        <button
-          type="button"
-          disabled={busy || !productImageUrl.trim()}
-          onClick={handleBrand}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-xs font-semibold py-2 rounded-lg flex items-center justify-center gap-2"
-        >
-          {busy ? (
-            <>
-              <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="30 70" />
-              </svg>
-              Applying…
-            </>
-          ) : "🏷 Generate branded image"}
-        </button>
+      {open && (
+        <MockupEditor
+          productImageUrl={productImageUrl}
+          tenantLogoUrl={logoUrl}
+          tenantSlug={tenantSlug}
+          onUseImage={onUseImage}
+          onClose={() => setOpen(false)}
+        />
       )}
-
-      {error && <p className="text-[10px] text-red-600">{error}</p>}
-
-      {/* Preview + actions */}
-      {preview && (
-        <div className="space-y-1.5">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={preview} alt="Branded preview" className="w-full rounded border border-gray-200 object-cover" />
-          <div className="flex gap-1.5">
-            <button
-              type="button"
-              onClick={() => { onUseImage(preview); setOpen(false); setPreview(null) }}
-              className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold py-1.5 rounded"
-            >
-              ✓ Use this
-            </button>
-            <button
-              type="button"
-              onClick={() => { setPreview(null) }}
-              className="text-xs border border-gray-300 text-gray-600 hover:bg-gray-50 px-3 py-1.5 rounded"
-            >
-              Try again
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+    </>
   )
 }
 
