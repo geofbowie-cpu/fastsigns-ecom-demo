@@ -11,16 +11,23 @@
     "deploy:reddy": "git checkout reddy-ice && vercel link --yes --project fastsigns-reddy --scope fastsigns-ely && vercel deploy --prod && git checkout main"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.105.3",
+    "@types/jszip": "^3.4.0",
+    "@types/papaparse": "^5.5.2",
+    "jszip": "^3.10.1",
     "lucide-react": "^1.7.0",
     "next": "16.2.2",
+    "papaparse": "^5.5.3",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/sharp": "^0.31.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.2",
     "tailwindcss": "^4",
