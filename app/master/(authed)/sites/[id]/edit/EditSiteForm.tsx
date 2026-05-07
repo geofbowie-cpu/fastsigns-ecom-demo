@@ -1,11 +1,20 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { type BankCategory, type ProductOverrides } from "@/lib/product-bank"
 import type { DbProduct } from "@/lib/products-db"
 import type { Tenant } from "@/lib/tenant"
 import ImageUploader from "../../../_shared/ImageUploader"
+
+// ── Dynamic Mockups types ──────────────────────────────────────
+type DmSmartObject = { uuid: string; name: string }
+type DmTemplate = {
+  uuid: string
+  name: string
+  preview_url: string | null
+  smart_objects: DmSmartObject[]
+}
 
 export default function EditSiteForm({
   tenant,
@@ -605,6 +614,265 @@ function ColorInput({
   )
 }
 
+// ── Mockup generator ──────────────────────────────────────────
+
+function MockupGenerator({
+  tenantSlug,
+  productImageUrl,
+  onUseImage,
+}: {
+  tenantSlug: string
+  productImageUrl: string
+  onUseImage: (url: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [templates, setTemplates] = useState<DmTemplate[]>([])
+  const [loadingTemplates, setLoadingTemplates] = useState(false)
+  const [templateError, setTemplateError] = useState<string | null>(null)
+
+  const [selectedTemplate, setSelectedTemplate] = useState<DmTemplate | null>(null)
+  const [selectedSoUuid, setSelectedSoUuid] = useState<string>("")
+  const [sourceUrl, setSourceUrl] = useState(productImageUrl)
+  const [rendering, setRendering] = useState(false)
+  const [renderedUrl, setRenderedUrl] = useState<string | null>(null)
+  const [renderError, setRenderError] = useState<string | null>(null)
+
+  // Keep sourceUrl in sync when productImageUrl changes externally
+  const prevProductImage = useRef(productImageUrl)
+  useEffect(() => {
+    if (productImageUrl !== prevProductImage.current) {
+      prevProductImage.current = productImageUrl
+      if (!renderedUrl) setSourceUrl(productImageUrl)
+    }
+  }, [productImageUrl, renderedUrl])
+
+  async function loadTemplates() {
+    if (templates.length > 0) return
+    setLoadingTemplates(true)
+    setTemplateError(null)
+    try {
+      const res = await fetch("/api/master/mockup/templates")
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? "Failed to load templates")
+      setTemplates(json.templates ?? [])
+    } catch (e: any) {
+      setTemplateError(e.message)
+    } finally {
+      setLoadingTemplates(false)
+    }
+  }
+
+  function handleOpen() {
+    setOpen(true)
+    loadTemplates()
+  }
+
+  function handleSelectTemplate(t: DmTemplate) {
+    setSelectedTemplate(t)
+    setSelectedSoUuid(t.smart_objects[0]?.uuid ?? "")
+    setRenderedUrl(null)
+    setRenderError(null)
+  }
+
+  async function handleRender() {
+    if (!selectedTemplate || !selectedSoUuid || !sourceUrl.trim()) return
+    setRendering(true)
+    setRenderError(null)
+    setRenderedUrl(null)
+    try {
+      const res = await fetch("/api/master/mockup/render", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mockup_uuid: selectedTemplate.uuid,
+          smart_object_uuid: selectedSoUuid,
+          image_url: sourceUrl.trim(),
+          tenant_slug: tenantSlug,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? "Render failed")
+      setRenderedUrl(json.url)
+    } catch (e: any) {
+      setRenderError(e.message)
+    } finally {
+      setRendering(false)
+    }
+  }
+
+  function handleUse() {
+    if (!renderedUrl) return
+    onUseImage(renderedUrl)
+    setOpen(false)
+    setRenderedUrl(null)
+    setSelectedTemplate(null)
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={handleOpen}
+        className="mt-1 text-xs text-purple-600 hover:text-purple-800 font-semibold flex items-center gap-1"
+      >
+        <span>🎨</span> Generate mockup
+      </button>
+    )
+  }
+
+  return (
+    <div className="mt-2 border border-purple-200 rounded-lg bg-purple-50 p-3 space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-bold text-purple-800">Dynamic Mockups</span>
+        <button
+          type="button"
+          onClick={() => { setOpen(false); setRenderedUrl(null); setRenderError(null) }}
+          className="text-xs text-gray-400 hover:text-gray-600"
+        >
+          ✕ close
+        </button>
+      </div>
+
+      {templateError && (
+        <p className="text-xs text-red-600">{templateError}</p>
+      )}
+
+      {loadingTemplates && (
+        <p className="text-xs text-purple-600 animate-pulse">Loading templates…</p>
+      )}
+
+      {!loadingTemplates && templates.length === 0 && !templateError && (
+        <p className="text-xs text-gray-500 italic">No mockup templates found in your account.</p>
+      )}
+
+      {templates.length > 0 && (
+        <>
+          {/* Template grid */}
+          <div>
+            <span className="block text-xs font-semibold text-gray-700 mb-1.5">
+              1. Pick a template
+            </span>
+            <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
+              {templates.map((t) => (
+                <button
+                  key={t.uuid}
+                  type="button"
+                  onClick={() => handleSelectTemplate(t)}
+                  className={`rounded-lg border-2 overflow-hidden text-left transition-all ${
+                    selectedTemplate?.uuid === t.uuid
+                      ? "border-purple-500 ring-1 ring-purple-400"
+                      : "border-gray-200 hover:border-purple-300"
+                  }`}
+                >
+                  {t.preview_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={t.preview_url}
+                      alt={t.name}
+                      className="w-full h-14 object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-14 bg-gray-200 flex items-center justify-center text-gray-400 text-2xl">
+                      🖼
+                    </div>
+                  )}
+                  <p className="text-[10px] font-medium text-gray-700 px-1.5 py-1 truncate">
+                    {t.name}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Smart object selector */}
+          {selectedTemplate && selectedTemplate.smart_objects.length > 1 && (
+            <div>
+              <span className="block text-xs font-semibold text-gray-700 mb-1">
+                2. Smart object (slot)
+              </span>
+              <select
+                value={selectedSoUuid}
+                onChange={(e) => setSelectedSoUuid(e.target.value)}
+                className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-purple-400"
+              >
+                {selectedTemplate.smart_objects.map((so) => (
+                  <option key={so.uuid} value={so.uuid}>
+                    {so.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Source image URL */}
+          {selectedTemplate && (
+            <div>
+              <span className="block text-xs font-semibold text-gray-700 mb-1">
+                {selectedTemplate.smart_objects.length > 1 ? "3." : "2."} Image URL to place in mockup
+              </span>
+              <input
+                type="url"
+                value={sourceUrl}
+                onChange={(e) => setSourceUrl(e.target.value)}
+                placeholder="https://example.com/my-artwork.png"
+                className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-purple-400"
+              />
+              <p className="text-[10px] text-gray-400 mt-0.5">
+                Must be a publicly accessible URL. This is the artwork/design placed inside the mockup.
+              </p>
+            </div>
+          )}
+
+          {/* Render button */}
+          {selectedTemplate && (
+            <button
+              type="button"
+              disabled={rendering || !sourceUrl.trim() || !selectedSoUuid}
+              onClick={handleRender}
+              className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-40 text-white text-xs font-semibold py-2 rounded-lg flex items-center justify-center gap-2"
+            >
+              {rendering ? (
+                <>
+                  <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="30 70" />
+                  </svg>
+                  Rendering…
+                </>
+              ) : (
+                "✨ Generate mockup"
+              )}
+            </button>
+          )}
+
+          {renderError && (
+            <p className="text-xs text-red-600">{renderError}</p>
+          )}
+
+          {/* Result preview */}
+          {renderedUrl && (
+            <div className="space-y-2">
+              <span className="block text-xs font-semibold text-gray-700">Result</span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={renderedUrl}
+                alt="Generated mockup"
+                className="w-full rounded-lg border border-gray-200 object-contain max-h-48"
+              />
+              <button
+                type="button"
+                onClick={handleUse}
+                className="w-full bg-green-600 hover:bg-green-700 text-white text-xs font-semibold py-2 rounded-lg"
+              >
+                ✓ Use this as product image
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
 // ── Product overrides panel ────────────────────────────────────
 
 function ProductOverridesPanel({
@@ -773,9 +1041,9 @@ function ProductOverridesPanel({
                     )}
                   </div>
 
-                  {/* Product image upload */}
+                  {/* Product image upload + mockup generator */}
                   {!disabled && (
-                    <div className="w-full sm:w-36 shrink-0">
+                    <div className="w-full sm:w-44 shrink-0">
                       <span className="block text-xs font-semibold text-gray-600 mb-1">
                         Product image
                       </span>
@@ -786,6 +1054,11 @@ function ProductOverridesPanel({
                         kind="logo"
                         previewAspect="4/3"
                         recommendation="Product image. PNG/JPG/WEBP. Up to 10 MB."
+                      />
+                      <MockupGenerator
+                        tenantSlug={tenantSlug}
+                        productImageUrl={ov.imageUrl ?? p.imageUrl ?? ""}
+                        onUseImage={(url) => onChange(p.slug, { imageUrl: url })}
                       />
                     </div>
                   )}
