@@ -188,15 +188,16 @@ export default async function TenantHomePage({
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           {cats.map((cat) => (
-            <div
+            <Link
               key={cat.slug}
-              className="bg-white rounded-xl p-4 text-center border border-gray-100 hover:shadow-md transition-shadow"
+              href={`/sites/${slug}/products?category=${cat.slug}`}
+              className="bg-white rounded-xl p-4 text-center border border-gray-100 hover:shadow-md hover:border-gray-300 transition-all group"
             >
-              <div className="text-3xl mb-2">{cat.icon}</div>
+              <div className="text-3xl mb-2 group-hover:scale-110 transition-transform inline-block">{cat.icon}</div>
               <div className="text-xs font-semibold text-gray-800 leading-tight">
                 {cat.name}
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </section>
@@ -213,9 +214,10 @@ export default async function TenantHomePage({
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {featured.map((p) => (
-                <div
+                <Link
                   key={p.slug}
-                  className="bg-white border border-gray-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow"
+                  href={`/sites/${slug}/products/${p.slug}`}
+                  className="group bg-white border border-gray-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow"
                 >
                   {p.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -235,7 +237,7 @@ export default async function TenantHomePage({
                     </div>
                   )}
                   <div className="p-4">
-                    <h3 className="font-bold text-gray-900 text-sm">{p.name}</h3>
+                    <h3 className="font-bold text-gray-900 text-sm group-hover:underline">{p.name}</h3>
                     <p className="text-xs text-gray-500 mt-1 line-clamp-2">{p.shortDesc}</p>
                     {b.showPricing && tenant.status !== "live" && (
                       <div className="mt-3 flex items-baseline gap-1">
@@ -245,16 +247,15 @@ export default async function TenantHomePage({
                       </div>
                     )}
                     {tenant.status === "live" && b.contactEmail && (
-                      <a
-                        href={`mailto:${b.contactEmail}?subject=Order inquiry: ${p.name}`}
-                        className="mt-3 inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg text-white"
-                        style={{ backgroundColor: b.primaryColor }}
+                      <div
+                        className="mt-3 inline-flex items-center gap-1 text-xs font-semibold"
+                        style={{ color: b.primaryColor }}
                       >
                         {b.orderCtaText} →
-                      </a>
+                      </div>
                     )}
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </div>
