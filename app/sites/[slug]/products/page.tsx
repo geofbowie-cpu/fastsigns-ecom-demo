@@ -3,6 +3,7 @@ import Link from "next/link"
 import { getTenantBySlug } from "@/lib/tenant"
 import { resolveBrand } from "@/lib/resolve-brand"
 import { getProducts, getCategories } from "@/lib/products-db"
+import { isMasterAuthed } from "@/lib/master-auth"
 
 export default async function TenantProductsPage({
   params,
@@ -13,7 +14,10 @@ export default async function TenantProductsPage({
 }) {
   const { slug } = await params
   const { category } = await searchParams
-  const tenant = await getTenantBySlug(slug)
+  const [tenant, isAdmin] = await Promise.all([
+    getTenantBySlug(slug),
+    isMasterAuthed(),
+  ])
   if (!tenant) notFound()
 
   const b = resolveBrand(tenant.brand)
@@ -32,6 +36,25 @@ export default async function TenantProductsPage({
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {isAdmin && (
+        <div className="sticky top-0 z-50 bg-gray-900 border-b border-yellow-500 text-white text-xs flex items-center justify-between px-4 py-2">
+          <span className="text-yellow-400 font-semibold">⚡ Admin preview — {tenant.name}</span>
+          <div className="flex items-center gap-4">
+            <Link
+              href={`/master/sites/${tenant.id}/edit`}
+              className="text-yellow-300 hover:text-yellow-100 font-medium"
+            >
+              Edit site ↗
+            </Link>
+            <Link
+              href="/master"
+              className="bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-semibold px-3 py-1 rounded"
+            >
+              ← Back to admin
+            </Link>
+          </div>
+        </div>
+      )}
       <nav className="sticky top-0 z-30 shadow-md" style={{ backgroundColor: b.primaryColor }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href={`/sites/${slug}`} className="flex items-center gap-2">
