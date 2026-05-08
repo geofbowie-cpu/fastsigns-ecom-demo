@@ -100,7 +100,7 @@ export function resolveBrand(brand: TenantBrand) {
     enterpriseCtaText: brand.enterpriseCtaText ?? GENERIC_DEFAULTS.enterpriseCtaText,
     footerTagline: brand.footerTagline ?? GENERIC_DEFAULTS.footerTagline,
     supportEmail: brand.supportEmail ?? GENERIC_DEFAULTS.supportEmail,
-    showPricing: brand.showPricing ?? true,
+    showPricing: brand.showPricing ?? false,
     contactName: brand.contactName ?? "",
     contactEmail: brand.contactEmail ?? "",
     contactPhone: brand.contactPhone ?? "",

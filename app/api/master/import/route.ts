@@ -134,7 +134,7 @@ export async function POST(req: Request) {
     const slug = row.slug?.trim()
     const name = row.name?.trim()
     const category = row.category?.trim()
-    const price = parseFloat(row.starting_price ?? "")
+    const price = row.starting_price?.trim() ? parseFloat(row.starting_price) : 0
 
     if (!slug) { validationErrors.push(`Row ${lineNum}: missing slug`); return }
     if (!name) { validationErrors.push(`Row ${lineNum}: missing name`); return }

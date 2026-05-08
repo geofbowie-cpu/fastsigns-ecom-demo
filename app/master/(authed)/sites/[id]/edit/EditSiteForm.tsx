@@ -38,7 +38,7 @@ export default function EditSiteForm({
     (tenant.brand?.accentColor as string) ?? "#f59e0b"
   )
   const [showPricing, setShowPricing] = useState(
-    (tenant.brand?.showPricing as boolean) ?? true
+    (tenant.brand?.showPricing as boolean) ?? false
   )
   const [logoImage, setLogoImage] = useState((tenant.brand?.logoImage as string) ?? "")
   const [heroHeading, setHeroHeading] = useState(
