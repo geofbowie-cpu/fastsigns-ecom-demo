@@ -22,8 +22,22 @@ export default async function MasterDashboard() {
             Branded prospect sites you can share. Each one lives at /sites/&lt;slug&gt;.
           </p>
         </div>
-        <div className="text-sm text-gray-500">
-          {active.length} active{archived.length > 0 ? ` · ${archived.length} archived` : ""}
+        <div className="flex items-center gap-3">
+          <Link
+            href="/master/import"
+            className="text-sm text-gray-600 hover:text-gray-900 border border-gray-300 hover:border-gray-400 px-3 py-1.5 rounded-lg font-medium"
+          >
+            ↑ Import products
+          </Link>
+          <Link
+            href="/master/sites/new"
+            className="text-sm bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-1.5 rounded-lg"
+          >
+            + New site
+          </Link>
+          <div className="text-sm text-gray-500">
+            {active.length} active{archived.length > 0 ? ` · ${archived.length} archived` : ""}
+          </div>
         </div>
       </div>
 
