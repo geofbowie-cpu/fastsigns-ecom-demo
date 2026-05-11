@@ -48,11 +48,13 @@ export async function GET(req: NextRequest) {
         }
       )
 
-    // Increment sign_in_count via raw SQL workaround
-    await adminClient().rpc("increment_visitor_count", {
-      p_tenant_id: tenant.id,
-      p_email: email,
-    }).then(() => {}).catch(() => {}) // optional — don't fail if RPC doesn't exist yet
+    // Increment sign_in_count (best-effort, ignore if RPC doesn't exist)
+    try {
+      await adminClient().rpc("increment_visitor_count", {
+        p_tenant_id: tenant.id,
+        p_email: email,
+      })
+    } catch { /* optional RPC */ }
   }
 
   const res = NextResponse.redirect(`${origin}/sites/${slug}`)
