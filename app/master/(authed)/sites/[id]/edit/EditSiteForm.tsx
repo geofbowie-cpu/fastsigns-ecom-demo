@@ -30,6 +30,20 @@ export default function EditSiteForm({
   availableImportTags: string[]
 }) {
   const router = useRouter()
+
+  // Snapshot initial brand values at mount so Reset always goes back to last-saved DB state
+  const initialBrand = useRef({
+    primaryColor: (tenant.brand?.primaryColor as string) ?? "#1e3a5f",
+    accentColor: (tenant.brand?.accentColor as string) ?? "#f59e0b",
+    navTextColor: (tenant.brand?.navTextColor as string) ?? "#ffffff",
+    heroCta1TextColor: (tenant.brand?.heroCta1TextColor as string) ?? "#000000",
+    showPricing: (tenant.brand?.showPricing as boolean) ?? false,
+    logoImage: (tenant.brand?.logoImage as string) ?? "",
+    heroHeading: (tenant.brand?.heroHeading as string) ?? "",
+    heroSubheading: (tenant.brand?.heroSubheading as string) ?? "",
+    heroBgImage: (tenant.brand?.heroBgImage as string) ?? "",
+  })
+
   const [name, setName] = useState(tenant.name)
   const [adminEmail, setAdminEmail] = useState(tenant.admin_email ?? "")
   const [primaryColor, setPrimaryColor] = useState(
@@ -84,15 +98,16 @@ export default function EditSiteForm({
   const [error, setError] = useState<string | null>(null)
 
   function resetBrand() {
-    setPrimaryColor((tenant.brand?.primaryColor as string) ?? "#1e3a5f")
-    setAccentColor((tenant.brand?.accentColor as string) ?? "#f59e0b")
-    setNavTextColor((tenant.brand?.navTextColor as string) ?? "#ffffff")
-    setHeroCta1TextColor((tenant.brand?.heroCta1TextColor as string) ?? "#000000")
-    setShowPricing((tenant.brand?.showPricing as boolean) ?? false)
-    setLogoImage((tenant.brand?.logoImage as string) ?? "")
-    setHeroHeading((tenant.brand?.heroHeading as string) ?? "")
-    setHeroSubheading((tenant.brand?.heroSubheading as string) ?? "")
-    setHeroBgImage((tenant.brand?.heroBgImage as string) ?? "")
+    const b = initialBrand.current
+    setPrimaryColor(b.primaryColor)
+    setAccentColor(b.accentColor)
+    setNavTextColor(b.navTextColor)
+    setHeroCta1TextColor(b.heroCta1TextColor)
+    setShowPricing(b.showPricing)
+    setLogoImage(b.logoImage)
+    setHeroHeading(b.heroHeading)
+    setHeroSubheading(b.heroSubheading)
+    setHeroBgImage(b.heroBgImage)
   }
 
   function patchProductOverride(
@@ -168,6 +183,18 @@ export default function EditSiteForm({
       if (!res.ok) {
         setError(json.error ?? "Save failed")
         return
+      }
+      // Update the reset snapshot to reflect the newly saved values
+      initialBrand.current = {
+        primaryColor,
+        accentColor,
+        navTextColor,
+        heroCta1TextColor,
+        showPricing,
+        logoImage,
+        heroHeading,
+        heroSubheading,
+        heroBgImage,
       }
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
