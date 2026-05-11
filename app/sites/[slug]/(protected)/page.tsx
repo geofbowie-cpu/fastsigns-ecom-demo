@@ -4,6 +4,7 @@ import { getTenantBySlug } from "@/lib/tenant"
 import { resolveBrand } from "@/lib/resolve-brand"
 import { getProducts, getCategories } from "@/lib/products-db"
 import { isMasterAuthed } from "@/lib/master-auth"
+import CategoryIcon from "@/components/CategoryIcon"
 
 export async function generateMetadata({
   params,
@@ -193,7 +194,9 @@ export default async function TenantHomePage({
               href={`/sites/${slug}/products?category=${cat.slug}`}
               className="bg-white rounded-xl p-4 text-center border border-gray-100 hover:shadow-md hover:border-gray-300 transition-all group"
             >
-              <div className="text-3xl mb-2 group-hover:scale-110 transition-transform inline-block">{cat.icon}</div>
+              <div className="mb-2 group-hover:scale-110 transition-transform inline-flex items-center justify-center w-8 h-8 opacity-80">
+                <CategoryIcon name={cat.icon} size={28} strokeWidth={1.5} />
+              </div>
               <div className="text-xs font-semibold text-gray-800 leading-tight">
                 {cat.name}
               </div>

@@ -15,6 +15,8 @@ type Props = {
   recommendation?: string
   /** Aspect ratio for the preview box (default 21:9 for hero) */
   previewAspect?: string
+  /** Cap preview height in px (e.g. 80 for logo, 120 for hero) */
+  maxPreviewHeight?: number
 }
 
 const ACCEPT = "image/png,image/jpeg,image/webp,image/svg+xml"
@@ -26,6 +28,7 @@ export default function ImageUploader({
   kind = "hero",
   recommendation,
   previewAspect = "21/9",
+  maxPreviewHeight,
 }: Props) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -82,7 +85,7 @@ export default function ImageUploader({
       {value ? (
         <div
           className="relative rounded-lg overflow-hidden border border-gray-200 bg-gray-50"
-          style={{ aspectRatio: previewAspect }}
+          style={{ aspectRatio: previewAspect, maxHeight: maxPreviewHeight }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -122,7 +125,7 @@ export default function ImageUploader({
               ? "border-blue-500 bg-blue-50"
               : "border-gray-300 hover:border-gray-400 bg-gray-50"
           }`}
-          style={{ aspectRatio: previewAspect }}
+          style={{ aspectRatio: previewAspect, maxHeight: maxPreviewHeight }}
         >
           <div className="h-full w-full flex flex-col items-center justify-center text-center p-6">
             <div className="text-3xl mb-2">{busy ? "⏳" : "🖼️"}</div>

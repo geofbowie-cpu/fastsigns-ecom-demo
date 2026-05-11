@@ -7,6 +7,7 @@ import type { DbProduct } from "@/lib/products-db"
 import type { Tenant } from "@/lib/tenant"
 import ImageUploader from "../../../_shared/ImageUploader"
 import MockupEditor from "./MockupEditor"
+import CategoryIcon from "@/components/CategoryIcon"
 
 // ── Dynamic Mockups types ──────────────────────────────────────
 type DmSmartObject = { uuid: string; name: string }
@@ -197,101 +198,63 @@ export default function EditSiteForm({
   }
 
   return (
-    <form onSubmit={save} className="space-y-8">
+    <form onSubmit={save} className="max-w-2xl space-y-6">
       <Section title="Identity">
         <Field label="Display name">
-          <input
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className={inputCls}
-          />
+          <input required value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
         </Field>
-        <Field label="Slug" hint="Slug is fixed after creation to keep URLs stable.">
-          <input
-            value={tenant.slug}
-            disabled
-            className={`${inputCls} font-mono bg-gray-100 text-gray-500`}
-          />
+        <Field label="Slug" hint="Fixed after creation.">
+          <input value={tenant.slug} disabled className={`${inputCls} font-mono bg-gray-50 text-gray-400`} />
         </Field>
-        <Field label="Admin email (optional)">
-          <input
-            type="email"
-            value={adminEmail}
-            onChange={(e) => setAdminEmail(e.target.value)}
-            className={inputCls}
-          />
+        <Field label="Admin email">
+          <input type="email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} className={inputCls} />
         </Field>
       </Section>
 
       <Section title="Brand">
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Primary color">
-            <ColorInput value={primaryColor} onChange={setPrimaryColor} />
-          </Field>
-          <Field label="Accent color">
-            <ColorInput value={accentColor} onChange={setAccentColor} />
-          </Field>
-        </div>
-        <Field label="Pricing">
-          <label className="flex items-center gap-3 cursor-pointer select-none">
-            <button
-              type="button"
-              role="switch"
-              aria-checked={showPricing}
-              onClick={() => setShowPricing((v) => !v)}
-              className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
-                showPricing ? "bg-blue-600" : "bg-gray-300"
-              }`}
-            >
-              <span
-                className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-                  showPricing ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
-            </button>
-            <span className="text-sm text-gray-700">
-              {showPricing ? "Show pricing" : "Hide pricing"}
-            </span>
-          </label>
+        <Field label="Colors">
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <div className="text-xs text-gray-400 mb-1">Primary</div>
+              <ColorInput value={primaryColor} onChange={setPrimaryColor} />
+            </div>
+            <div className="flex-1">
+              <div className="text-xs text-gray-400 mb-1">Accent</div>
+              <ColorInput value={accentColor} onChange={setAccentColor} />
+            </div>
+          </div>
         </Field>
-
-        <Field label="Logo">
+        <Field label="Show pricing">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={showPricing}
+            onClick={() => setShowPricing((v) => !v)}
+            className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
+              showPricing ? "bg-blue-600" : "bg-gray-300"
+            }`}
+          >
+            <span className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${showPricing ? "translate-x-4" : "translate-x-0"}`} />
+          </button>
+        </Field>
+        <Field label="Logo" hint="PNG with transparent bg">
           <ImageUploader
-            value={logoImage}
-            onChange={setLogoImage}
-            slug={tenant.slug}
-            kind="logo"
-            previewAspect="3/1"
-            recommendation="Recommended: ~600 × 200 px PNG with transparent background. Up to 10 MB."
+            value={logoImage} onChange={setLogoImage}
+            slug={tenant.slug} kind="logo"
+            previewAspect="3/1" maxPreviewHeight={72}
           />
         </Field>
         <Field label="Hero heading">
-          <input
-            value={heroHeading}
-            onChange={(e) => setHeroHeading(e.target.value)}
-            className={inputCls}
-          />
+          <input value={heroHeading} onChange={(e) => setHeroHeading(e.target.value)} className={inputCls} />
         </Field>
         <Field label="Hero subheading">
-          <textarea
-            value={heroSubheading}
-            onChange={(e) => setHeroSubheading(e.target.value)}
-            rows={2}
-            className={inputCls}
-          />
+          <textarea value={heroSubheading} onChange={(e) => setHeroSubheading(e.target.value)} rows={2} className={inputCls} />
         </Field>
-        <Field
-          label="Hero background image"
-          hint="The big photo behind the hero text. Wider-than-tall works best."
-        >
+        <Field label="Hero image" hint="Wide photo behind hero text">
           <ImageUploader
-            value={heroBgImage}
-            onChange={setHeroBgImage}
-            slug={tenant.slug}
-            kind="hero"
-            previewAspect="21/9"
-            recommendation="Recommended: 2400 × 1100 px (≈ 21:9). Min 1600 × 720. PNG, JPG, or WEBP. Up to 10 MB."
+            value={heroBgImage} onChange={setHeroBgImage}
+            slug={tenant.slug} kind="hero"
+            previewAspect="21/9" maxPreviewHeight={110}
           />
         </Field>
       </Section>
@@ -349,9 +312,9 @@ export default function EditSiteForm({
 
       <Section
         title="Product categories"
-        hint="Pick which categories to show. Leave all unchecked to show everything."
+        hint="Leave all unchecked to show everything."
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-1">
           {categories.map((cat) => {
             const on = enabled.has(cat.slug)
             return (
@@ -359,34 +322,19 @@ export default function EditSiteForm({
                 key={cat.slug}
                 type="button"
                 onClick={() => toggleCategory(cat.slug)}
-                className={`flex items-start gap-3 text-left p-3 rounded-lg border-2 transition-colors ${
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-all ${
                   on
-                    ? "border-blue-600 bg-blue-50"
-                    : "border-gray-200 hover:border-gray-400 bg-white"
+                    ? "border-blue-500 bg-blue-50 text-blue-900"
+                    : "border-gray-200 hover:border-gray-300 bg-white text-gray-700"
                 }`}
               >
-                <span className="text-2xl shrink-0">{cat.icon}</span>
-                <span className="flex-1 min-w-0">
-                  <span className="block text-sm font-bold text-gray-900">{cat.name}</span>
-                  <span className="block text-xs text-gray-500 truncate">{cat.description}</span>
-                </span>
-                <span
-                  className={`mt-1 w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${
-                    on ? "bg-blue-600 border-blue-600" : "border-gray-300"
-                  }`}
-                >
-                  {on && (
-                    <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3 text-white">
-                      <path
-                        d="M5 12l5 5L20 7"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  )}
-                </span>
+                <CategoryIcon
+                  name={cat.icon}
+                  size={14}
+                  strokeWidth={1.75}
+                  className={on ? "text-blue-600" : "text-gray-400"}
+                />
+                <span className="text-xs font-medium truncate">{cat.name}</span>
               </button>
             )
           })}
@@ -414,85 +362,48 @@ export default function EditSiteForm({
 
       {/* Status / promote */}
       <Section
-        title={status === "live" ? "🟢 Live portal" : "🔵 Demo site"}
-        hint={
-          status === "live"
-            ? "This site is live. Visitors see product cards with a contact-to-order CTA. Fill in the rep contact details below."
-            : "This site is in demo mode — showcase only. Promote to live when the prospect becomes a customer."
-        }
+        title={status === "live" ? "Live portal" : "Demo site"}
+        hint={status === "live" ? "Contact-to-order CTAs visible to visitors." : "Showcase only — promote when they become a customer."}
       >
-        {/* Contact fields — always visible so you can fill them before promoting */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field label="Rep / contact name">
-            <input
-              value={contactName}
-              onChange={(e) => setContactName(e.target.value)}
-              placeholder="Jane Smith"
-              className={inputCls}
-            />
-          </Field>
-          <Field label="Contact email">
-            <input
-              type="email"
-              value={contactEmail}
-              onChange={(e) => setContactEmail(e.target.value)}
-              placeholder="jane@fastsigns.com"
-              className={inputCls}
-            />
-          </Field>
-          <Field label="Contact phone (optional)">
-            <input
-              value={contactPhone}
-              onChange={(e) => setContactPhone(e.target.value)}
-              placeholder="(555) 555-0100"
-              className={inputCls}
-            />
-          </Field>
-          <Field label="Order CTA text">
-            <input
-              value={orderCtaText}
-              onChange={(e) => setOrderCtaText(e.target.value)}
-              placeholder="Contact to order"
-              className={inputCls}
-            />
-          </Field>
-        </div>
-
-        <div className="pt-2 flex items-center gap-3">
-          {status === "demo" ? (
-            <button
-              type="button"
-              disabled={busy || !contactEmail.trim()}
-              onClick={() => setStatus("live")}
-              title={!contactEmail.trim() ? "Add a contact email first" : undefined}
-              className="bg-green-600 hover:bg-green-500 disabled:opacity-40 text-white text-sm font-semibold px-5 py-2 rounded-lg"
-            >
-              🚀 Promote to live
-            </button>
-          ) : (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => setStatus("demo")}
-              className="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-semibold px-5 py-2 rounded-lg"
-            >
-              ↩ Demote to demo
-            </button>
-          )}
-          <span className="text-xs text-gray-400">
-            {status === "demo"
-              ? "Contact email required to promote"
-              : "Demoting hides the order CTAs but keeps contact info saved"}
-          </span>
-        </div>
+        <Field label="Rep name">
+          <input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Jane Smith" className={inputCls} />
+        </Field>
+        <Field label="Contact email">
+          <input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="jane@fastsigns.com" className={inputCls} />
+        </Field>
+        <Field label="Contact phone">
+          <input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="(555) 555-0100" className={inputCls} />
+        </Field>
+        <Field label="Order CTA text">
+          <input value={orderCtaText} onChange={(e) => setOrderCtaText(e.target.value)} placeholder="Contact to order" className={inputCls} />
+        </Field>
+        <Field label="Status">
+          <div className="flex items-center gap-2">
+            {status === "demo" ? (
+              <button type="button" disabled={busy || !contactEmail.trim()} onClick={() => setStatus("live")}
+                title={!contactEmail.trim() ? "Add a contact email first" : undefined}
+                className="bg-green-600 hover:bg-green-500 disabled:opacity-40 text-white text-xs font-semibold px-3 py-1.5 rounded-md">
+                Promote to live
+              </button>
+            ) : (
+              <button type="button" disabled={busy} onClick={() => setStatus("demo")}
+                className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold px-3 py-1.5 rounded-md border border-gray-200">
+                Demote to demo
+              </button>
+            )}
+            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${status === "live" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>
+              {status === "live" ? "● Live" : "● Demo"}
+            </span>
+          </div>
+        </Field>
       </Section>
 
       {/* Access control */}
       <Section
-        title="🔒 Access control"
-        hint="Leave blank for a public site. Add domains to require sign-in — anyone with a matching work email can self-serve a magic link."
+        title="Access control"
+        hint="Blank = public. Add domains to gate with magic-link login."
       >
-        <Field label="Allowed email domains (comma-separated)">
+        <Field label="Allowed domains" hint="comma-separated, e.g. nike.com">
           <input
             value={allowedDomains}
             onChange={(e) => setAllowedDomains(e.target.value)}
@@ -500,14 +411,11 @@ export default function EditSiteForm({
             className={inputCls}
           />
         </Field>
-        <p className="text-xs text-gray-400">
-          e.g. <code>nike.com</code> — anyone at @nike.com can sign in without you having to add them individually.
-        </p>
       </Section>
 
       {/* Danger zone */}
-      <section className="bg-white rounded-xl border border-red-200 p-5">
-        <h2 className="text-sm font-bold text-red-700 mb-3">Danger zone</h2>
+      <section className="border border-red-200 rounded-lg p-4">
+        <h2 className="text-xs font-semibold text-red-500 uppercase tracking-wider mb-3">Danger zone</h2>
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
@@ -565,22 +473,22 @@ export default function EditSiteForm({
         </div>
       )}
 
-      <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
+      <div className="flex items-center gap-3 pt-3 border-t border-gray-100">
         <button
           type="submit"
           disabled={busy}
-          className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-semibold px-6 py-2.5 rounded-lg"
+          className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-semibold px-4 py-2 rounded-md"
         >
-          {busy ? "Saving…" : "Save"}
+          {busy ? "Saving…" : "Save changes"}
         </button>
-        {saved && <span className="text-sm text-green-600 font-medium">✓ Saved</span>}
+        {saved && <span className="text-xs text-green-600 font-medium">✓ Saved</span>}
       </div>
     </form>
   )
 }
 
 const inputCls =
-  "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+  "w-full px-2.5 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
 
 function Section({
   title,
@@ -592,12 +500,12 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <section className="bg-white rounded-xl border border-gray-200 p-5">
-      <div className="mb-4">
-        <h2 className="text-sm font-bold text-gray-900">{title}</h2>
-        {hint && <p className="text-xs text-gray-500 mt-0.5">{hint}</p>}
+    <section>
+      <div className="flex items-baseline gap-3 mb-3 pb-2 border-b border-gray-100">
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{title}</h2>
+        {hint && <p className="text-xs text-gray-400 truncate">{hint}</p>}
       </div>
-      <div className="space-y-3">{children}</div>
+      <div className="space-y-0.5">{children}</div>
     </section>
   )
 }
@@ -606,17 +514,21 @@ function Field({
   label,
   hint,
   children,
+  wide,
 }: {
   label: string
   hint?: string
   children: React.ReactNode
+  wide?: boolean
 }) {
   return (
-    <label className="block">
-      <span className="block text-xs font-semibold text-gray-700 mb-1">{label}</span>
-      {hint && <span className="block text-xs text-gray-500 mb-1.5">{hint}</span>}
-      {children}
-    </label>
+    <div className={`grid py-2 gap-3 ${wide ? "grid-cols-1" : "grid-cols-[180px_1fr] items-start"}`}>
+      <div className="pt-1.5">
+        <span className="text-xs font-medium text-gray-600">{label}</span>
+        {hint && <span className="block text-xs text-gray-400 mt-0.5 leading-tight">{hint}</span>}
+      </div>
+      <div>{children}</div>
+    </div>
   )
 }
 
