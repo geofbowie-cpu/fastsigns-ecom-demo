@@ -1063,7 +1063,7 @@ function ProductOverridesPanel({
               {cat.name}
             </span>
           </div>
-          <div className="divide-y divide-gray-100 border border-gray-200 rounded-lg overflow-hidden">
+          <div className="divide-y divide-gray-100 border border-gray-200 rounded-lg">
             {products.map((p) => {
               const ov = overrides[p.slug] ?? {}
               const disabled = ov.disabled ?? false
