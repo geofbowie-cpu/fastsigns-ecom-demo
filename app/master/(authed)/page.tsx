@@ -1,7 +1,20 @@
 import Link from "next/link"
 import { listTenants, type Tenant } from "@/lib/tenant"
+import { adminClient } from "@/lib/supabase"
 
-function SiteCard({ t }: { t: Tenant }) {
+async function getVisitorCounts(): Promise<Record<string, number>> {
+  const { data } = await adminClient()
+    .from("tenant_visitors")
+    .select("tenant_id")
+  if (!data) return {}
+  const counts: Record<string, number> = {}
+  for (const row of data) {
+    counts[row.tenant_id] = (counts[row.tenant_id] ?? 0) + 1
+  }
+  return counts
+}
+
+function SiteCard({ t, visitorCount }: { t: Tenant; visitorCount: number }) {
   const primary = (t.brand?.primaryColor as string) ?? "#1e3a5f"
   return (
     <Link
@@ -26,11 +39,23 @@ function SiteCard({ t }: { t: Tenant }) {
           <h3 className="font-bold text-gray-900 truncate">{t.name}</h3>
         </div>
         <div className="mt-1.5 text-xs text-gray-400 font-mono">/sites/{t.slug}</div>
-        <div className="mt-1.5 text-xs text-gray-500">
-          {t.enabled_categories.length === 0
-            ? "All categories"
-            : `${t.enabled_categories.length} categor${t.enabled_categories.length === 1 ? "y" : "ies"}`}
+        <div className="mt-1.5 flex items-center justify-between">
+          <span className="text-xs text-gray-500">
+            {t.enabled_categories.length === 0
+              ? "All categories"
+              : `${t.enabled_categories.length} categor${t.enabled_categories.length === 1 ? "y" : "ies"}`}
+          </span>
+          {visitorCount > 0 && (
+            <span className="text-xs text-gray-400">
+              👁 {visitorCount} visitor{visitorCount !== 1 ? "s" : ""}
+            </span>
+          )}
         </div>
+        {(t.allowed_domains ?? []).length > 0 && (
+          <div className="mt-1 text-xs text-gray-400">
+            🔒 {t.allowed_domains.join(", ")}
+          </div>
+        )}
       </div>
     </Link>
   )
@@ -42,12 +67,14 @@ function SiteSection({
   sites,
   emptyText,
   accentClass,
+  visitorCounts,
 }: {
   title: string
   description: string
   sites: Tenant[]
   emptyText: string
   accentClass: string
+  visitorCounts: Record<string, number>
 }) {
   return (
     <div>
@@ -66,7 +93,7 @@ function SiteSection({
         <p className="text-sm text-gray-400 italic mb-2">{emptyText}</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {sites.map((t) => <SiteCard key={t.id} t={t} />)}
+          {sites.map((t) => <SiteCard key={t.id} t={t} visitorCount={visitorCounts[t.id] ?? 0} />)}
         </div>
       )}
     </div>
@@ -76,8 +103,9 @@ function SiteSection({
 export default async function MasterDashboard() {
   let tenants: Tenant[] = []
   let fetchError: string | null = null
+  let visitorCounts: Record<string, number> = {}
   try {
-    tenants = await listTenants()
+    ;[tenants, visitorCounts] = await Promise.all([listTenants(), getVisitorCounts()])
   } catch (e: any) {
     fetchError = e.message
   }
@@ -127,6 +155,7 @@ export default async function MasterDashboard() {
             sites={live}
             emptyText="No live sites yet."
             accentClass="bg-green-500"
+            visitorCounts={visitorCounts}
           />
           <SiteSection
             title="Demo"
@@ -134,6 +163,7 @@ export default async function MasterDashboard() {
             sites={demo}
             emptyText="No demo sites yet — create one with the button above."
             accentClass="bg-blue-500"
+            visitorCounts={visitorCounts}
           />
           {archived.length > 0 && (
             <SiteSection
@@ -142,6 +172,7 @@ export default async function MasterDashboard() {
               sites={archived}
               emptyText=""
               accentClass="bg-gray-400"
+              visitorCounts={visitorCounts}
             />
           )}
         </div>

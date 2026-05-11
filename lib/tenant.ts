@@ -71,6 +71,7 @@ export type Tenant = {
   status: "demo" | "live"
   admin_email: string | null
   archived: boolean
+  allowed_domains: string[]
   created_at: string
   updated_at: string
 }

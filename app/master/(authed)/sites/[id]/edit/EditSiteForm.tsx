@@ -63,6 +63,10 @@ export default function EditSiteForm({
   const [orderCtaText, setOrderCtaText] = useState(
     (tenant.brand?.orderCtaText as string) ?? "Contact to order"
   )
+  // Access control
+  const [allowedDomains, setAllowedDomains] = useState(
+    (tenant.allowed_domains ?? []).join(", ")
+  )
   // Delete confirmation
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteSlugInput, setDeleteSlugInput] = useState("")
@@ -132,6 +136,10 @@ export default function EditSiteForm({
           import_tags: Array.from(importTags),
           product_overrides: productOverrides,
           admin_email: adminEmail || null,
+          allowed_domains: allowedDomains
+            .split(",")
+            .map((d) => d.trim().toLowerCase().replace(/^@/, ""))
+            .filter(Boolean),
         }),
       })
       const json = await res.json()
@@ -477,6 +485,24 @@ export default function EditSiteForm({
               : "Demoting hides the order CTAs but keeps contact info saved"}
           </span>
         </div>
+      </Section>
+
+      {/* Access control */}
+      <Section
+        title="🔒 Access control"
+        hint="Leave blank for a public site. Add domains to require sign-in — anyone with a matching work email can self-serve a magic link."
+      >
+        <Field label="Allowed email domains (comma-separated)">
+          <input
+            value={allowedDomains}
+            onChange={(e) => setAllowedDomains(e.target.value)}
+            placeholder="nike.com, nikegroup.com"
+            className={inputCls}
+          />
+        </Field>
+        <p className="text-xs text-gray-400">
+          e.g. <code>nike.com</code> — anyone at @nike.com can sign in without you having to add them individually.
+        </p>
       </Section>
 
       {/* Danger zone */}
