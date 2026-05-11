@@ -11,6 +11,7 @@
     "deploy:reddy": "git checkout reddy-ice && vercel link --yes --project fastsigns-reddy --scope fastsigns-ely && vercel deploy --prod && git checkout main"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.105.3",
     "@types/jszip": "^3.4.0",
     "@types/papaparse": "^5.5.2",

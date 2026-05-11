@@ -95,16 +95,6 @@ export default function Nav() {
               )}
             </Link>
 
-            <Link
-              href="/admin/login"
-              className="text-sm font-medium px-4 py-1.5 rounded transition-opacity hover:opacity-100"
-              style={{
-                color: textColor,
-                border: `1px solid ${textColor}66`,
-              }}
-            >
-              Sign In
-            </Link>
           </div>
 
           {/* Mobile: cart + hamburger */}
@@ -150,13 +140,6 @@ export default function Nav() {
               </Link>
             ))}
             <div className="pt-2 border-t border-gray-100">
-              <Link
-                href="/admin/login"
-                className="block w-full text-sm font-medium py-2 rounded text-center text-white"
-                style={{ backgroundColor: brand.navBgColor }}
-              >
-                Sign In
-              </Link>
             </div>
           </div>
         </div>

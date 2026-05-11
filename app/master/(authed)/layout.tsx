@@ -24,6 +24,12 @@ export default async function AuthedLayout({
               Import products
             </Link>
             <Link
+              href="/master/users"
+              className="text-gray-300 hover:text-white text-xs font-medium"
+            >
+              Users
+            </Link>
+            <Link
               href="/master/sites/new"
               className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg"
             >
