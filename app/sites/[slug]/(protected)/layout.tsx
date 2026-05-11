@@ -3,7 +3,7 @@ import { cookies } from "next/headers"
 import { getTenantBySlug } from "@/lib/tenant"
 import { getTenantSession, cookieName } from "@/lib/tenant-auth"
 
-export default async function SiteLayout({
+export default async function ProtectedSiteLayout({
   children,
   params,
 }: {
