@@ -1,40 +1,27 @@
 import { NextResponse, type NextRequest } from "next/server"
-import { createServerClient } from "@supabase/ssr"
+import { authAdminClient } from "@/lib/supabase-auth"
 import { adminClient } from "@/lib/supabase"
 import { startMasterSession } from "@/lib/master-auth"
 
 export async function GET(req: NextRequest) {
   const { searchParams, origin } = new URL(req.url)
-  const code = searchParams.get("code")
+  const tokenHash = searchParams.get("token_hash")
+  const type = searchParams.get("type")
 
-  if (!code) {
+  if (!tokenHash || !type) {
     return NextResponse.redirect(`${origin}/?error=missing_code`)
   }
 
-  // Build a response we can write cookies onto
-  const redirectSuccess = NextResponse.redirect(`${origin}/master`)
-  const redirectFail = (err: string) => NextResponse.redirect(`${origin}/?error=${err}`)
-
-  // Use @supabase/ssr so it can read the PKCE verifier cookie set during signInWithOtp
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return req.cookies.getAll() },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            redirectSuccess.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
-
-  const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+  // Verify the token hash — no PKCE needed with this approach
+  const supabase = authAdminClient()
+  const { data, error } = await supabase.auth.verifyOtp({
+    token_hash: tokenHash,
+    type: type as "email",
+  })
 
   if (error || !data.user?.email) {
-    return redirectFail("invalid_link")
+    console.error("verifyOtp error:", error)
+    return NextResponse.redirect(`${origin}/?error=invalid_link`)
   }
 
   const email = data.user.email.toLowerCase()
@@ -47,7 +34,7 @@ export async function GET(req: NextRequest) {
     .maybeSingle()
 
   if (!portalUser) {
-    return redirectFail("not_authorized")
+    return NextResponse.redirect(`${origin}/?error=not_authorized`)
   }
 
   // Update last sign-in timestamp
@@ -56,8 +43,8 @@ export async function GET(req: NextRequest) {
     .update({ last_sign_in_at: new Date().toISOString() })
     .eq("email", email)
 
-  // Set the master session cookie (next/headers writes it into the response automatically)
+  // Set master session cookie and redirect into the app
   await startMasterSession()
 
-  return redirectSuccess
+  return NextResponse.redirect(`${origin}/master`)
 }

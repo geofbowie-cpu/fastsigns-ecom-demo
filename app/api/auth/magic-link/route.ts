@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server"
-import { createServerClient } from "@supabase/ssr"
 import { adminClient } from "@/lib/supabase"
+import { authAdminClient } from "@/lib/supabase-auth"
 
 export async function POST(req: NextRequest) {
   let body: { email: string }
@@ -20,38 +20,49 @@ export async function POST(req: NextRequest) {
     .eq("email", email)
     .maybeSingle()
 
-  if (!user) {
-    // Return 200 to avoid email enumeration — UI shows the same message either way
-    return NextResponse.json({ ok: true })
-  }
+  // Return 200 regardless to avoid email enumeration
+  if (!user) return NextResponse.json({ ok: true })
 
-  const siteUrl = process.env.SITE_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
+  const siteUrl = process.env.SITE_URL ?? "http://localhost:3000"
 
-  // Use @supabase/ssr so the PKCE verifier is stored in a cookie on this response
-  const response = NextResponse.json({ ok: true })
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return req.cookies.getAll() },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
-
-  await supabase.auth.signInWithOtp({
+  // Generate a server-side magic link token (no PKCE, no Supabase email)
+  const { data, error } = await authAdminClient().auth.admin.generateLink({
+    type: "magiclink",
     email,
-    options: {
-      emailRedirectTo: `${siteUrl}/auth/callback`,
-      shouldCreateUser: true,
-    },
+    options: { redirectTo: `${siteUrl}/auth/callback` },
   })
 
-  return response
+  if (error || !data?.properties?.hashed_token) {
+    console.error("generateLink error:", error)
+    return NextResponse.json({ ok: true }) // silent fail
+  }
+
+  const tokenHash = data.properties.hashed_token
+  const magicUrl = `${siteUrl}/auth/callback?token_hash=${tokenHash}&type=email`
+
+  // Send via Resend
+  const resendRes = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+    },
+    body: JSON.stringify({
+      from: "FASTSIGNS Demo <noreply@authentum.com>",
+      to: [email],
+      subject: "Your sign-in link for FASTSIGNS Demo Builder",
+      html: `
+        <p>Hi,</p>
+        <p>Click the link below to sign in to the FASTSIGNS Demo Builder. This link expires in 1 hour and can only be used once.</p>
+        <p><a href="${magicUrl}" style="background:#1d4ed8;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;font-weight:600;">Sign in to Demo Builder</a></p>
+        <p style="color:#6b7280;font-size:13px;">Or copy this URL: ${magicUrl}</p>
+      `,
+    }),
+  })
+
+  if (!resendRes.ok) {
+    console.error("Resend error:", await resendRes.text())
+  }
+
+  return NextResponse.json({ ok: true })
 }
