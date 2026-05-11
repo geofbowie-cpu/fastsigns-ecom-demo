@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { authAdminClient } from "@/lib/supabase-auth"
 import { adminClient } from "@/lib/supabase"
-import { startMasterSession } from "@/lib/master-auth"
+import { setMasterSessionOnResponse } from "@/lib/master-auth"
 
 export async function GET(req: NextRequest) {
   const { searchParams, origin } = new URL(req.url)
@@ -43,8 +43,8 @@ export async function GET(req: NextRequest) {
     .update({ last_sign_in_at: new Date().toISOString() })
     .eq("email", email)
 
-  // Set master session cookie and redirect into the app
-  await startMasterSession()
-
-  return NextResponse.redirect(`${origin}/master`)
+  // Set master session cookie directly on the redirect response
+  const res = NextResponse.redirect(`${origin}/master`)
+  setMasterSessionOnResponse(res)
+  return res
 }
