@@ -1,3 +1,5 @@
+"use client"
+
 import {
   Flag, Layers, Monitor, Car, Navigation, Gift, Tag,
   Compass, Star, Palette, Package, HelpCircle,

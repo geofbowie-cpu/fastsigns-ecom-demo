@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
 import { getTenantBySlug } from "@/lib/tenant"
 import { getTenantSession, cookieName } from "@/lib/tenant-auth"
+import { isMasterAuthed } from "@/lib/master-auth"
 
 export default async function ProtectedSiteLayout({
   children,
@@ -20,7 +21,10 @@ export default async function ProtectedSiteLayout({
   const domains = tenant.allowed_domains ?? []
   if (domains.length === 0) return <>{children}</>
 
-  // Check session cookie
+  // Master admins can always preview any site
+  if (await isMasterAuthed()) return <>{children}</>
+
+  // Check tenant session cookie
   const store = await cookies()
   const raw = store.get(cookieName(slug))?.value
   const email = getTenantSession(slug, raw)
