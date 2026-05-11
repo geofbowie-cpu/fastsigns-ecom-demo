@@ -98,13 +98,13 @@ export default async function TenantHomePage({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={b.logoImage} alt={b.company} className="h-8 w-auto" />
               ) : (
-                <span className="text-white font-black tracking-wide text-lg">
+                <span className="font-black tracking-wide text-lg" style={{ color: b.navTextColor }}>
                   {b.logoText}
                 </span>
               )}
             </Link>
             <div className="flex items-center gap-6">
-              <span className="text-white/80 text-sm hidden sm:inline">{b.tagline}</span>
+              <span className="text-sm hidden sm:inline" style={{ color: b.navTextColor, opacity: 0.8 }}>{b.tagline}</span>
             </div>
           </div>
         </div>
@@ -152,7 +152,7 @@ export default async function TenantHomePage({
               <Link
                 href={`/sites/${slug}/${b.heroCta1Url}`}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity"
-                style={{ backgroundColor: b.heroCta1Color, color: "#000" }}
+                style={{ backgroundColor: b.heroCta1Color, color: b.heroCta1TextColor }}
               >
                 {b.heroCta1Text} →
               </Link>

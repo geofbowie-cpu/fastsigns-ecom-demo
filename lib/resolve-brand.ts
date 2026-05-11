@@ -69,6 +69,8 @@ export function resolveBrand(brand: TenantBrand) {
     primaryDark,
     primaryLight,
     accentColor: accent,
+    navTextColor: (brand.navTextColor as string | undefined) ?? "#ffffff",
+    heroCta1TextColor: (brand.heroCta1TextColor as string | undefined) ?? "#000000",
     accentDark: brand.accentDark ?? adjustBrightness(accent, -20),
     heroHeading: brand.heroHeading ?? GENERIC_DEFAULTS.heroHeading,
     heroSubheading: brand.heroSubheading ?? GENERIC_DEFAULTS.heroSubheading,
