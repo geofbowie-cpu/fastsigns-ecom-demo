@@ -5,7 +5,7 @@ import { cookies } from "next/headers"
 import { createHmac, timingSafeEqual, randomBytes } from "crypto"
 
 const COOKIE_NAME = "ecom_master"
-const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 8 // 8h
+const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7 // 7 days
 
 function getSecret(): string {
   const s = process.env.MASTER_SESSION_SECRET

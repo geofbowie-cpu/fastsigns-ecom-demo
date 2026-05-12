@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { isMasterAuthed } from "@/lib/master-auth"
+import { isMasterAuthed, startMasterSession } from "@/lib/master-auth"
 
 export default async function AuthedLayout({
   children,
@@ -8,6 +8,8 @@ export default async function AuthedLayout({
   children: React.ReactNode
 }) {
   if (!(await isMasterAuthed())) redirect("/master/login")
+  // Renew the session cookie on every page load so it doesn't expire mid-session
+  await startMasterSession()
 
   return (
     <div className="min-h-screen bg-gray-50">
