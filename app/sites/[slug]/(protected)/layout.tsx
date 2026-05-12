@@ -29,7 +29,7 @@ export default async function ProtectedSiteLayout({
   const raw = store.get(cookieName(slug))?.value
   const email = getTenantSession(slug, raw)
 
-  if (!email) redirect(`/sites/${slug}/login`)
+  if (!email) redirect(`/${slug}/login`)
 
   return <>{children}</>
 }
