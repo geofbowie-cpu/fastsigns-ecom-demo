@@ -354,7 +354,37 @@ export default function MockupEditor({
     if (!canvas) return
     setSaving(true); setError(null)
     try {
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.92)
+      // Render to an offscreen canvas WITHOUT the selection handles
+      const off = document.createElement("canvas")
+      off.width = CW; off.height = CH
+      const ctx = off.getContext("2d")!
+
+      // Background / product image
+      if (!productImg) {
+        ctx.fillStyle = "#d1d5db"
+        ctx.fillRect(0, 0, CW, CH)
+      } else {
+        const s = Math.max(CW / productImg.width, CH / productImg.height)
+        const sw = productImg.width * s, sh = productImg.height * s
+        ctx.drawImage(productImg, (CW - sw) / 2, (CH - sh) / 2, sw, sh)
+      }
+
+      // Logo only — no handles
+      if (logoImg) {
+        const aspect = logoImg.height / logoImg.width
+        const lw = transform.width, lh = lw * aspect
+        const cf = COLOR_FILTERS.find((f) => f.id === colorFilter)!
+        ctx.save()
+        ctx.globalAlpha = transform.opacity
+        ctx.filter = cf.filter
+        ctx.translate(transform.x, transform.y)
+        ctx.rotate((transform.rotation * Math.PI) / 180)
+        ctx.transform(1, Math.tan((transform.skewY * Math.PI) / 180), Math.tan((transform.skewX * Math.PI) / 180), 1, 0, 0)
+        ctx.drawImage(logoImg, -lw / 2, -lh / 2, lw, lh)
+        ctx.restore()
+      }
+
+      const dataUrl = off.toDataURL("image/jpeg", 0.92)
       const res = await fetch("/api/master/mockup/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
