@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { getTenantBySlug } from "@/lib/tenant"
-import { authAdminClient } from "@/lib/supabase-auth"
+import { authAnonClient } from "@/lib/supabase-auth"
 
 export async function POST(req: Request) {
   let body: { email: string; slug: string }
@@ -21,11 +21,9 @@ export async function POST(req: Request) {
 
   const domains = tenant.allowed_domains ?? []
   if (domains.length === 0) {
-    // No restriction — shouldn't be hitting this endpoint
     return NextResponse.json({ error: "This site doesn't require sign-in" }, { status: 400 })
   }
 
-  // Check domain
   const emailDomain = email.split("@")[1]
   if (!domains.includes(emailDomain)) {
     return NextResponse.json(
@@ -36,52 +34,19 @@ export async function POST(req: Request) {
 
   const siteUrl = process.env.SITE_URL ?? "http://localhost:3000"
 
-  // Generate a one-time token via Supabase admin
-  const { data, error } = await authAdminClient().auth.admin.generateLink({
-    type: "magiclink",
+  // Use Supabase's own email delivery — no Resend needed.
+  // Supabase sends the magic link; after verification it redirects to our callback.
+  const { error } = await authAnonClient().auth.signInWithOtp({
     email,
-    options: { redirectTo: `${siteUrl}/auth/tenant-callback` },
-  })
-
-  if (error || !data?.properties?.hashed_token) {
-    console.error("generateLink error:", error)
-    return NextResponse.json({ error: "Failed to generate link" }, { status: 500 })
-  }
-
-  const tokenHash = data.properties.hashed_token
-  const magicUrl = `${siteUrl}/auth/tenant-callback?token_hash=${tokenHash}&type=email&slug=${slug}`
-
-  const companyName = (tenant.brand?.company as string) ?? tenant.name
-
-  // Send via Resend
-  const fromAddress = process.env.RESEND_FROM ?? "FASTSIGNS Demo <onboarding@resend.dev>"
-  const resendRes = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+    options: {
+      emailRedirectTo: `${siteUrl}/auth/tenant-callback?slug=${slug}`,
+      shouldCreateUser: true,
     },
-    body: JSON.stringify({
-      from: fromAddress,
-      to: [email],
-      subject: `Your sign-in link for ${companyName} — FASTSIGNS`,
-      html: `
-        <p>Hi,</p>
-        <p>Click below to view the <strong>${companyName}</strong> FASTSIGNS demo portal. This link expires in 1 hour and can only be used once.</p>
-        <p><a href="${magicUrl}" style="background:#1d4ed8;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;font-weight:600;">View ${companyName} portal →</a></p>
-        <p style="color:#6b7280;font-size:13px;">Or copy: ${magicUrl}</p>
-        <p style="color:#9ca3af;font-size:12px;margin-top:24px;">If you didn't request this, you can safely ignore it.</p>
-      `,
-    }),
   })
 
-  if (!resendRes.ok) {
-    const resendErr = await resendRes.json().catch(() => ({}))
-    console.error("Resend error:", resendErr)
-    return NextResponse.json(
-      { error: resendErr.message ?? "Failed to send email" },
-      { status: 500 }
-    )
+  if (error) {
+    console.error("signInWithOtp error:", error)
+    return NextResponse.json({ error: error.message ?? "Failed to send link" }, { status: 500 })
   }
 
   return NextResponse.json({ ok: true })
