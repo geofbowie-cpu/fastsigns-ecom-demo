@@ -57,7 +57,11 @@ export async function GET(req: NextRequest) {
     } catch { /* optional RPC */ }
   }
 
-  const res = NextResponse.redirect(`${origin}/sites/${slug}`)
+  // If the root is rewritten to this tenant (fastsigns-demos.vercel.app),
+  // send them to / so the URL stays clean. Otherwise use the slug path.
+  const rootRewrittenSlugs = ["reddy-ice"]
+  const redirectPath = rootRewrittenSlugs.includes(slug) ? "/" : `/sites/${slug}`
+  const res = NextResponse.redirect(`${origin}${redirectPath}`)
   setTenantSessionOnResponse(res, slug, email)
   return res
 }
