@@ -54,14 +54,15 @@ export async function POST(req: Request) {
   const companyName = (tenant.brand?.company as string) ?? tenant.name
 
   // Send via Resend
-  await fetch("https://api.resend.com/emails", {
+  const fromAddress = process.env.RESEND_FROM ?? "FASTSIGNS Demo <onboarding@resend.dev>"
+  const resendRes = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
     },
     body: JSON.stringify({
-      from: "FASTSIGNS Demo <noreply@authentum.com>",
+      from: fromAddress,
       to: [email],
       subject: `Your sign-in link for ${companyName} — FASTSIGNS`,
       html: `
@@ -73,6 +74,15 @@ export async function POST(req: Request) {
       `,
     }),
   })
+
+  if (!resendRes.ok) {
+    const resendErr = await resendRes.json().catch(() => ({}))
+    console.error("Resend error:", resendErr)
+    return NextResponse.json(
+      { error: resendErr.message ?? "Failed to send email" },
+      { status: 500 }
+    )
+  }
 
   return NextResponse.json({ ok: true })
 }
