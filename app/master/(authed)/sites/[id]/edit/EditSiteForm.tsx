@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { type BankCategory, type ProductOverrides } from "@/lib/product-bank"
 import type { DbProduct } from "@/lib/products-db"
@@ -946,93 +947,157 @@ function ProductImageCell({
   brandPrimaryColor: string
   brandCompanyName: string
 }) {
-  const [open, setOpen] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [mode, setMode] = useState<null | "lightbox" | "editor">(null)
   const [busy, setBusy] = useState(false)
 
-  async function uploadFile(file: File) {
-    setBusy(true)
-    try {
-      const fd = new FormData()
-      fd.append("file", file)
-      fd.append("kind", "logo")
-      fd.append("slug", tenantSlug)
-      const res = await fetch("/api/master/upload", { method: "POST", body: fd })
-      const json = await res.json()
-      if (res.ok) onChange(json.url as string)
-    } finally {
-      setBusy(false)
-    }
-  }
+  const modalContent =
+    mode === "lightbox" && value ? (
+      <div
+        className="fixed inset-0 z-[999] bg-black/80 flex items-center justify-center p-6"
+        onClick={() => setMode(null)}
+      >
+        <div className="relative max-w-3xl w-full" onClick={(e) => e.stopPropagation()}>
+          <button
+            type="button"
+            onClick={() => setMode(null)}
+            className="absolute -top-9 right-0 text-white/70 hover:text-white text-sm font-medium flex items-center gap-1.5"
+          >
+            <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
+              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            Close
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={value} alt="" className="w-full max-h-[80vh] object-contain rounded-lg shadow-2xl" />
+          <div className="flex gap-2 mt-3 justify-end">
+            <button
+              type="button"
+              onClick={() => setMode("editor")}
+              className="text-xs text-white/80 hover:text-white border border-white/30 hover:border-white/60 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Edit image
+            </button>
+            <button
+              type="button"
+              onClick={() => { onChange(""); setMode(null) }}
+              className="text-xs text-red-400 hover:text-red-300 border border-red-400/40 hover:border-red-400/70 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      </div>
+    ) : mode === "editor" ? (
+      <div
+        className="fixed inset-0 z-[999] bg-black/50 flex items-center justify-center p-4"
+        onClick={() => setMode(null)}
+      >
+        <div
+          className="bg-white rounded-2xl shadow-2xl w-80 max-h-[90vh] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+            <span className="text-sm font-bold text-gray-900">Product image</span>
+            <button type="button" onClick={() => setMode(null)} className="text-gray-400 hover:text-gray-700">
+              <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
+                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+          <div className="p-4 space-y-3">
+            <ImageUploader
+              value={value}
+              onChange={(url) => { onChange(url); if (url) setMode(null) }}
+              slug={tenantSlug}
+              kind="logo"
+              previewAspect="4/3"
+              maxPreviewHeight={140}
+              recommendation="PNG, JPG, or WEBP"
+            />
+            <div className="border-t border-gray-100 pt-3 space-y-2">
+              <BrandImageButton
+                tenantSlug={tenantSlug}
+                productImageUrl={productImageUrl}
+                logoUrl={brandLogoUrl}
+                primaryColor={brandPrimaryColor}
+                companyName={brandCompanyName}
+                onUseImage={(url) => { onChange(url); setMode(null) }}
+              />
+              <MockupGenerator
+                tenantSlug={tenantSlug}
+                productImageUrl={productImageUrl}
+                onUseImage={(url) => { onChange(url); setMode(null) }}
+              />
+            </div>
+            {value && (
+              <button
+                type="button"
+                onClick={() => { onChange(""); setMode(null) }}
+                className="w-full text-xs text-red-500 hover:text-red-700 py-1.5 border border-red-100 hover:border-red-200 rounded-lg transition-colors"
+              >
+                Remove image
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    ) : null
 
   return (
-    <div className="shrink-0 flex flex-col items-center gap-1">
-      {/* Thumbnail */}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        title="Change product image"
-        className="w-10 h-10 rounded border border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center hover:border-blue-400 transition-colors"
-      >
-        {busy ? (
-          <svg className="animate-spin w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="30 70" />
-          </svg>
-        ) : value ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={value} alt="" className="w-full h-full object-cover" />
-        ) : (
-          <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 text-gray-400">
-            <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
-            <path d="M3 16l5-5 4 4 3-3 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        )}
-      </button>
-      {value && (
+    <>
+      {/* Thumbnail with hover actions */}
+      <div className="shrink-0 group relative w-12 h-12">
         <button
           type="button"
-          onClick={() => onChange("")}
-          className="text-[10px] text-gray-400 hover:text-red-500"
+          onClick={() => setMode(value ? "lightbox" : "editor")}
+          className="w-full h-full rounded-lg border border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center transition-colors hover:border-gray-400"
         >
-          clear
+          {busy ? (
+            <svg className="animate-spin w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="30 70" />
+            </svg>
+          ) : value ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={value} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 text-gray-400">
+              <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M3 16l5-5 4 4 3-3 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
         </button>
-      )}
-
-      {/* Expanded uploader */}
-      {open && (
-        <div className="absolute z-10 mt-12 right-0 w-64 bg-white border border-gray-200 rounded-xl shadow-lg p-3 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-gray-700">Product image</span>
-            <button type="button" onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600 text-xs">✕</button>
+        {/* Hover overlay */}
+        {value && (
+          <div className="absolute inset-0 rounded-lg bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 pointer-events-none group-hover:pointer-events-auto">
+            <button
+              type="button"
+              title="Edit"
+              onClick={(e) => { e.stopPropagation(); setMode("editor") }}
+              className="w-6 h-6 rounded bg-white/90 hover:bg-white flex items-center justify-center"
+            >
+              <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3 text-gray-800">
+                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              title="Remove"
+              onClick={(e) => { e.stopPropagation(); onChange("") }}
+              className="w-6 h-6 rounded bg-white/90 hover:bg-white flex items-center justify-center"
+            >
+              <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3 text-red-500">
+                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+              </svg>
+            </button>
           </div>
-          <ImageUploader
-            value={value}
-            onChange={(url) => { onChange(url); if (url) setOpen(false) }}
-            slug={tenantSlug}
-            kind="logo"
-            previewAspect="4/3"
-            maxPreviewHeight={100}
-            recommendation="Product image. PNG/JPG/WEBP."
-          />
-          <BrandImageButton
-            tenantSlug={tenantSlug}
-            productImageUrl={productImageUrl}
-            logoUrl={brandLogoUrl}
-            primaryColor={brandPrimaryColor}
-            companyName={brandCompanyName}
-            onUseImage={(url) => { onChange(url); setOpen(false) }}
-          />
-          <MockupGenerator
-            tenantSlug={tenantSlug}
-            productImageUrl={productImageUrl}
-            onUseImage={(url) => { onChange(url); setOpen(false) }}
-          />
-        </div>
-      )}
-      <input ref={inputRef} type="file" accept="image/*" className="hidden"
-        onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadFile(f); e.target.value = "" }}
-      />
-    </div>
+        )}
+      </div>
+      {/* Portal modals — renders at document.body to escape any stacking context */}
+      {typeof window !== "undefined" && modalContent
+        ? createPortal(modalContent, document.body)
+        : null}
+    </>
   )
 }
 
