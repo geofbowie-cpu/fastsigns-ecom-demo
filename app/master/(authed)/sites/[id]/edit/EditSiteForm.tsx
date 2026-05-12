@@ -353,7 +353,7 @@ export default function EditSiteForm({
                       : "border-gray-200 hover:border-gray-400 bg-white"
                   }`}
                 >
-                  <span className="text-lg">📦</span>
+                  <svg viewBox="0 0 24 24" fill="none" className={`w-4 h-4 shrink-0 ${on ? "text-blue-600" : "text-gray-400"}`}><path d="M20 7l-8-4-8 4m16 0v10l-8 4m-8-4V7m16 0l-8 4m-8-4l8 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   <span className="flex-1 min-w-0 text-sm font-mono font-semibold text-gray-900 truncate">
                     {tag}
                   </span>
@@ -652,7 +652,8 @@ function BrandImageButton({
         title={!productImageUrl.trim() ? "Product needs an image first" : "Open logo placement editor"}
         className="mt-1 text-xs text-blue-600 hover:text-blue-800 disabled:opacity-40 font-semibold flex items-center gap-1"
       >
-        🏷 Place logo on image
+        <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="7" cy="7" r="1" fill="currentColor"/></svg>
+        Place logo on image
       </button>
       {open && (
         <MockupEditor
@@ -768,7 +769,8 @@ function MockupGenerator({
         onClick={handleOpen}
         className="mt-1 text-xs text-purple-600 hover:text-purple-800 font-semibold flex items-center gap-1"
       >
-        <span>🎨</span> Generate mockup
+        <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5"/><path d="M8 14s1.5 2 4 2 4-2 4-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><circle cx="9" cy="10" r="1" fill="currentColor"/><circle cx="15" cy="10" r="1" fill="currentColor"/></svg>
+        Generate mockup
       </button>
     )
   }
@@ -825,8 +827,8 @@ function MockupGenerator({
                       className="w-full h-14 object-cover"
                     />
                   ) : (
-                    <div className="w-full h-14 bg-gray-200 flex items-center justify-center text-gray-400 text-2xl">
-                      🖼
+                    <div className="w-full h-14 bg-gray-100 flex items-center justify-center text-gray-300">
+                      <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5"/><path d="M3 16l5-5 4 4 3-3 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </div>
                   )}
                   <p className="text-[10px] font-medium text-gray-700 px-1.5 py-1 truncate">

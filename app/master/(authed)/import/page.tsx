@@ -107,7 +107,7 @@ export default function ImportPage() {
                 onClick={() => csvInputRef.current?.click()}
                 className="w-full border-2 border-dashed border-gray-300 hover:border-gray-400 rounded-lg p-8 text-center bg-gray-50 transition-colors"
               >
-                <div className="text-2xl mb-1">📄</div>
+                <div className="mb-2 flex justify-center text-gray-300"><svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
                 <div className="text-sm font-semibold text-gray-700">Drop CSV here or click to upload</div>
                 <div className="text-xs text-gray-400 mt-1">.csv files only</div>
               </button>
@@ -165,7 +165,7 @@ export default function ImportPage() {
               onClick={() => zipInputRef.current?.click()}
               className="w-full border-2 border-dashed border-gray-300 hover:border-gray-400 rounded-lg p-6 text-center bg-gray-50 transition-colors"
             >
-              <div className="text-2xl mb-1">🗜️</div>
+              <div className="mb-2 flex justify-center text-gray-300"><svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
               <div className="text-sm font-semibold text-gray-700">Drop ZIP here or click to upload</div>
               <div className="text-xs text-gray-400 mt-1">.zip files only</div>
             </button>

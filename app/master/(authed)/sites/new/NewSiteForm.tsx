@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import type { BankCategory } from "@/lib/product-bank"
 import ImageUploader from "../../_shared/ImageUploader"
+import CategoryIcon from "@/components/CategoryIcon"
 
 const slugify = (s: string) =>
   s
@@ -290,7 +291,7 @@ export default function NewSiteForm({
                     : "border-gray-200 hover:border-gray-400 bg-white"
                 }`}
               >
-                <span className="text-2xl shrink-0">{cat.icon}</span>
+                <CategoryIcon name={cat.icon} size={16} strokeWidth={1.5} className={`shrink-0 ${on ? "text-blue-600" : "text-gray-400"}`} />
                 <span className="flex-1 min-w-0">
                   <span className="block text-sm font-bold text-gray-900">{cat.name}</span>
                   <span className="block text-xs text-gray-500 truncate">{cat.description}</span>
@@ -341,7 +342,7 @@ export default function NewSiteForm({
                     on ? "border-blue-600 bg-blue-50" : "border-gray-200 hover:border-gray-400 bg-white"
                   }`}
                 >
-                  <span className="text-lg">📦</span>
+                  <svg viewBox="0 0 24 24" fill="none" className={`w-4 h-4 shrink-0 ${on ? "text-blue-600" : "text-gray-400"}`}><path d="M20 7l-8-4-8 4m16 0v10l-8 4m-8-4V7m16 0l-8 4m-8-4l8 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   <span className="flex-1 min-w-0 text-sm font-mono font-semibold text-gray-900 truncate">{tag}</span>
                   <span className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${on ? "bg-blue-600 border-blue-600" : "border-gray-300"}`}>
                     {on && (
