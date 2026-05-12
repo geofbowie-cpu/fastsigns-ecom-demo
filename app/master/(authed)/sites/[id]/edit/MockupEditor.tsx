@@ -121,6 +121,7 @@ export default function MockupEditor({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hoveredHandle, setHoveredHandle] = useState<string | null>(null)
+  const showHandlesRef = useRef(true)
 
   // ── Load product image ───────────────────────────────────────
   useEffect(() => {
@@ -182,6 +183,8 @@ export default function MockupEditor({
     ctx.restore()
 
     // ── Draw selection UI ────────────────────────────────────
+    // Skip when capturing a clean image for save
+    if (!showHandlesRef.current) return
     const handles = getHandles(transform, hw, hh)
 
     // Bounding box
@@ -354,7 +357,13 @@ export default function MockupEditor({
     if (!canvas) return
     setSaving(true); setError(null)
     try {
+      // Hide selection handles, redraw cleanly, snapshot, then restore
+      showHandlesRef.current = false
+      draw()
       const dataUrl = canvas.toDataURL("image/jpeg", 0.92)
+      showHandlesRef.current = true
+      draw()
+
       const res = await fetch("/api/master/mockup/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -5,7 +5,7 @@ import { cookies } from "next/headers"
 import { createHmac, timingSafeEqual, randomBytes } from "crypto"
 
 const COOKIE_NAME = "ecom_master"
-const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 8 // 8h
+const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7 // 7 days
 
 function getSecret(): string {
   const s = process.env.MASTER_SESSION_SECRET
@@ -46,15 +46,23 @@ export function checkMasterPassword(password: string): boolean {
   return timingSafeEqual(Buffer.from(password), Buffer.from(expected))
 }
 
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
+  path: "/",
+  maxAge: COOKIE_MAX_AGE_SECONDS,
+}
+
+/** Use in Server Actions / layouts (next/headers) */
 export async function startMasterSession(): Promise<void> {
   const c = await cookies()
-  c.set(COOKIE_NAME, makeToken(), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: COOKIE_MAX_AGE_SECONDS,
-  })
+  c.set(COOKIE_NAME, makeToken(), COOKIE_OPTIONS)
+}
+
+/** Use in Route Handlers — writes the cookie onto an existing NextResponse */
+export function setMasterSessionOnResponse(res: { cookies: { set: (name: string, value: string, opts: object) => void } }): void {
+  res.cookies.set(COOKIE_NAME, makeToken(), COOKIE_OPTIONS)
 }
 
 export async function endMasterSession(): Promise<void> {

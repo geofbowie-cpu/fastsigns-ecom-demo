@@ -6,9 +6,9 @@ import Footer from "@/components/Footer"
 
 export function ConditionalShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const isAdmin = pathname.startsWith("/admin")
+  const isShellless = pathname.startsWith("/admin") || pathname.startsWith("/master") || pathname.startsWith("/sites") || pathname.startsWith("/auth") || pathname === "/"
 
-  if (isAdmin) return <>{children}</>
+  if (isShellless) return <>{children}</>
 
   return (
     <>

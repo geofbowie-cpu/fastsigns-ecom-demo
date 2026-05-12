@@ -1,6 +1,11 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { isMasterAuthed } from "@/lib/master-auth"
+
+export const metadata: Metadata = {
+  title: "Demo Builder · FASTSIGNS",
+}
 
 export default async function AuthedLayout({
   children,
@@ -22,6 +27,12 @@ export default async function AuthedLayout({
               className="text-gray-300 hover:text-white text-xs font-medium"
             >
               Import products
+            </Link>
+            <Link
+              href="/master/users"
+              className="text-gray-300 hover:text-white text-xs font-medium"
+            >
+              Users
             </Link>
             <Link
               href="/master/sites/new"

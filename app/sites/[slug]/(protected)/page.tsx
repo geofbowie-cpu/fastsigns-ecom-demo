@@ -4,6 +4,7 @@ import { getTenantBySlug } from "@/lib/tenant"
 import { resolveBrand } from "@/lib/resolve-brand"
 import { getProducts, getCategories } from "@/lib/products-db"
 import { isMasterAuthed } from "@/lib/master-auth"
+import CategoryIcon from "@/components/CategoryIcon"
 
 export async function generateMetadata({
   params,
@@ -97,13 +98,13 @@ export default async function TenantHomePage({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={b.logoImage} alt={b.company} className="h-8 w-auto" />
               ) : (
-                <span className="text-white font-black tracking-wide text-lg">
+                <span className="font-black tracking-wide text-lg" style={{ color: b.navTextColor }}>
                   {b.logoText}
                 </span>
               )}
             </Link>
             <div className="flex items-center gap-6">
-              <span className="text-white/80 text-sm hidden sm:inline">{b.tagline}</span>
+              <span className="text-sm hidden sm:inline" style={{ color: b.navTextColor, opacity: 0.8 }}>{b.tagline}</span>
             </div>
           </div>
         </div>
@@ -151,7 +152,7 @@ export default async function TenantHomePage({
               <Link
                 href={`/sites/${slug}/${b.heroCta1Url}`}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity"
-                style={{ backgroundColor: b.heroCta1Color, color: "#000" }}
+                style={{ backgroundColor: b.heroCta1Color, color: b.heroCta1TextColor }}
               >
                 {b.heroCta1Text} →
               </Link>
@@ -193,7 +194,9 @@ export default async function TenantHomePage({
               href={`/sites/${slug}/products?category=${cat.slug}`}
               className="bg-white rounded-xl p-4 text-center border border-gray-100 hover:shadow-md hover:border-gray-300 transition-all group"
             >
-              <div className="text-3xl mb-2 group-hover:scale-110 transition-transform inline-block">{cat.icon}</div>
+              <div className="mb-2 group-hover:scale-110 transition-transform inline-flex items-center justify-center w-8 h-8 opacity-80">
+                <CategoryIcon name={cat.icon} size={28} strokeWidth={1.5} />
+              </div>
               <div className="text-xs font-semibold text-gray-800 leading-tight">
                 {cat.name}
               </div>

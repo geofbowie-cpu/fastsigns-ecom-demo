@@ -7,6 +7,7 @@ import type { DbProduct } from "@/lib/products-db"
 import type { Tenant } from "@/lib/tenant"
 import ImageUploader from "../../../_shared/ImageUploader"
 import MockupEditor from "./MockupEditor"
+import CategoryIcon from "@/components/CategoryIcon"
 
 // ── Dynamic Mockups types ──────────────────────────────────────
 type DmSmartObject = { uuid: string; name: string }
@@ -29,6 +30,7 @@ export default function EditSiteForm({
   availableImportTags: string[]
 }) {
   const router = useRouter()
+
   const [name, setName] = useState(tenant.name)
   const [adminEmail, setAdminEmail] = useState(tenant.admin_email ?? "")
   const [primaryColor, setPrimaryColor] = useState(
@@ -38,7 +40,7 @@ export default function EditSiteForm({
     (tenant.brand?.accentColor as string) ?? "#f59e0b"
   )
   const [showPricing, setShowPricing] = useState(
-    (tenant.brand?.showPricing as boolean) ?? true
+    (tenant.brand?.showPricing as boolean) ?? false
   )
   const [logoImage, setLogoImage] = useState((tenant.brand?.logoImage as string) ?? "")
   const [heroHeading, setHeroHeading] = useState(
@@ -63,13 +65,60 @@ export default function EditSiteForm({
   const [orderCtaText, setOrderCtaText] = useState(
     (tenant.brand?.orderCtaText as string) ?? "Contact to order"
   )
+  // Access control
+  const [allowedDomains, setAllowedDomains] = useState(
+    (tenant.allowed_domains ?? []).join(", ")
+  )
   // Delete confirmation
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteSlugInput, setDeleteSlugInput] = useState("")
 
+  const [navTextColor, setNavTextColor] = useState(
+    (tenant.brand?.navTextColor as string) ?? "#ffffff"
+  )
+  const [heroCta1TextColor, setHeroCta1TextColor] = useState(
+    (tenant.brand?.heroCta1TextColor as string) ?? "#000000"
+  )
+
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Brand-fetch re-pull
+  const defaultDomain =
+    allowedDomains.split(",")[0]?.trim() ||
+    adminEmail.split("@")[1]?.trim() ||
+    ""
+  const [bfDomain, setBfDomain] = useState(defaultDomain)
+  const [bfBusy, setBfBusy] = useState(false)
+  const [bfInfo, setBfInfo] = useState<string | null>(null)
+  const [bfError, setBfError] = useState<string | null>(null)
+
+  async function refetchBrand() {
+    if (!bfDomain.trim()) return
+    setBfBusy(true)
+    setBfInfo(null)
+    setBfError(null)
+    try {
+      const res = await fetch("/api/master/brandfetch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain: bfDomain.trim(), slug: tenant.slug }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setBfError(json.error ?? "Fetch failed"); return }
+      const b = json.brand
+      const filled: string[] = []
+      if (b.primaryColor) { setPrimaryColor(b.primaryColor); filled.push("primary color") }
+      if (b.accentColor)  { setAccentColor(b.accentColor);   filled.push("accent color") }
+      if (b.logoUrl)      { setLogoImage(b.logoUrl);          filled.push("logo") }
+      setBfInfo(filled.length ? `Applied: ${filled.join(", ")}` : "Brand found but no usable assets returned")
+    } catch (e: any) {
+      setBfError(e.message ?? "Fetch failed")
+    } finally {
+      setBfBusy(false)
+    }
+  }
 
   function patchProductOverride(
     productSlug: string,
@@ -106,6 +155,8 @@ export default function EditSiteForm({
         logoText: name.toUpperCase(),
         primaryColor,
         accentColor,
+        navTextColor,
+        heroCta1TextColor,
         showPricing,
         contactName: contactName.trim() || undefined,
         contactEmail: contactEmail.trim() || undefined,
@@ -132,6 +183,10 @@ export default function EditSiteForm({
           import_tags: Array.from(importTags),
           product_overrides: productOverrides,
           admin_email: adminEmail || null,
+          allowed_domains: allowedDomains
+            .split(",")
+            .map((d) => d.trim().toLowerCase().replace(/^@/, ""))
+            .filter(Boolean),
         }),
       })
       const json = await res.json()
@@ -189,101 +244,86 @@ export default function EditSiteForm({
   }
 
   return (
-    <form onSubmit={save} className="space-y-8">
+    <form onSubmit={save} className="max-w-2xl space-y-4">
       <Section title="Identity">
         <Field label="Display name">
-          <input
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className={inputCls}
-          />
+          <input required value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
         </Field>
-        <Field label="Slug" hint="Slug is fixed after creation to keep URLs stable.">
-          <input
-            value={tenant.slug}
-            disabled
-            className={`${inputCls} font-mono bg-gray-100 text-gray-500`}
-          />
+        <Field label="Slug" hint="Fixed after creation.">
+          <input value={tenant.slug} disabled className={`${inputCls} font-mono bg-gray-50 text-gray-400`} />
         </Field>
-        <Field label="Admin email (optional)">
-          <input
-            type="email"
-            value={adminEmail}
-            onChange={(e) => setAdminEmail(e.target.value)}
-            className={inputCls}
-          />
+        <Field label="Admin email">
+          <input type="email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} className={inputCls} />
         </Field>
       </Section>
 
-      <Section title="Brand">
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Primary color">
-            <ColorInput value={primaryColor} onChange={setPrimaryColor} />
-          </Field>
-          <Field label="Accent color">
-            <ColorInput value={accentColor} onChange={setAccentColor} />
-          </Field>
+      <Section title="Brand" action={
+        <div className="flex items-center gap-1.5">
+          <input
+            value={bfDomain}
+            onChange={(e) => setBfDomain(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), refetchBrand())}
+            placeholder="nike.com"
+            className="w-32 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+          />
+          <button
+            type="button"
+            onClick={refetchBrand}
+            disabled={bfBusy || !bfDomain.trim()}
+            className="text-xs font-semibold px-2.5 py-1 rounded border border-gray-300 hover:border-blue-400 hover:text-blue-600 disabled:opacity-40"
+          >
+            {bfBusy ? "…" : "Re-fetch"}
+          </button>
+          {bfInfo && <span className="text-xs text-green-600">{bfInfo}</span>}
+          {bfError && <span className="text-xs text-red-500">{bfError}</span>}
         </div>
-        <Field label="Pricing">
-          <label className="flex items-center gap-3 cursor-pointer select-none">
-            <button
-              type="button"
-              role="switch"
-              aria-checked={showPricing}
-              onClick={() => setShowPricing((v) => !v)}
-              className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
-                showPricing ? "bg-blue-600" : "bg-gray-300"
-              }`}
-            >
-              <span
-                className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-                  showPricing ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
-            </button>
-            <span className="text-sm text-gray-700">
-              {showPricing ? "Show pricing" : "Hide pricing"}
-            </span>
-          </label>
+      }>
+        <Field label="Colors">
+          <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+            {[
+              { label: "Primary", value: primaryColor, onChange: setPrimaryColor },
+              { label: "Accent", value: accentColor, onChange: setAccentColor },
+              { label: "Nav text", value: navTextColor, onChange: setNavTextColor },
+              { label: "CTA text", value: heroCta1TextColor, onChange: setHeroCta1TextColor },
+            ].map(({ label, value, onChange }) => (
+              <div key={label} className="flex items-center gap-1.5">
+                <span className="text-[11px] text-gray-400 w-16 shrink-0">{label}</span>
+                <ColorInput value={value} onChange={onChange} />
+              </div>
+            ))}
+          </div>
         </Field>
-
-        <Field label="Logo">
+        <Field label="Show pricing">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={showPricing}
+            onClick={() => setShowPricing((v) => !v)}
+            className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
+              showPricing ? "bg-blue-600" : "bg-gray-300"
+            }`}
+          >
+            <span className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${showPricing ? "translate-x-4" : "translate-x-0"}`} />
+          </button>
+        </Field>
+        <Field label="Logo" hint="PNG with transparent bg">
           <ImageUploader
-            value={logoImage}
-            onChange={setLogoImage}
-            slug={tenant.slug}
-            kind="logo"
-            previewAspect="3/1"
-            recommendation="Recommended: ~600 × 200 px PNG with transparent background. Up to 10 MB."
+            value={logoImage} onChange={setLogoImage}
+            slug={tenant.slug} kind="logo"
+            previewAspect="3/1" maxPreviewHeight={72}
           />
         </Field>
         <Field label="Hero heading">
-          <input
-            value={heroHeading}
-            onChange={(e) => setHeroHeading(e.target.value)}
-            className={inputCls}
-          />
+          <input value={heroHeading} onChange={(e) => setHeroHeading(e.target.value)} className={inputCls} />
         </Field>
         <Field label="Hero subheading">
-          <textarea
-            value={heroSubheading}
-            onChange={(e) => setHeroSubheading(e.target.value)}
-            rows={2}
-            className={inputCls}
-          />
+          <textarea value={heroSubheading} onChange={(e) => setHeroSubheading(e.target.value)} rows={2} className={inputCls} />
         </Field>
-        <Field
-          label="Hero background image"
-          hint="The big photo behind the hero text. Wider-than-tall works best."
-        >
+        <Field label="Hero image" hint="Wide photo behind hero text">
           <ImageUploader
-            value={heroBgImage}
-            onChange={setHeroBgImage}
-            slug={tenant.slug}
-            kind="hero"
-            previewAspect="21/9"
-            recommendation="Recommended: 2400 × 1100 px (≈ 21:9). Min 1600 × 720. PNG, JPG, or WEBP. Up to 10 MB."
+            value={heroBgImage} onChange={setHeroBgImage}
+            slug={tenant.slug} kind="hero"
+            previewAspect="21/9" maxPreviewHeight={110}
           />
         </Field>
       </Section>
@@ -313,7 +353,7 @@ export default function EditSiteForm({
                       : "border-gray-200 hover:border-gray-400 bg-white"
                   }`}
                 >
-                  <span className="text-lg">📦</span>
+                  <svg viewBox="0 0 24 24" fill="none" className={`w-4 h-4 shrink-0 ${on ? "text-blue-600" : "text-gray-400"}`}><path d="M20 7l-8-4-8 4m16 0v10l-8 4m-8-4V7m16 0l-8 4m-8-4l8 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   <span className="flex-1 min-w-0 text-sm font-mono font-semibold text-gray-900 truncate">
                     {tag}
                   </span>
@@ -341,9 +381,9 @@ export default function EditSiteForm({
 
       <Section
         title="Product categories"
-        hint="Pick which categories to show. Leave all unchecked to show everything."
+        hint="Leave all unchecked to show everything."
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-1">
           {categories.map((cat) => {
             const on = enabled.has(cat.slug)
             return (
@@ -351,34 +391,19 @@ export default function EditSiteForm({
                 key={cat.slug}
                 type="button"
                 onClick={() => toggleCategory(cat.slug)}
-                className={`flex items-start gap-3 text-left p-3 rounded-lg border-2 transition-colors ${
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-all ${
                   on
-                    ? "border-blue-600 bg-blue-50"
-                    : "border-gray-200 hover:border-gray-400 bg-white"
+                    ? "border-blue-500 bg-blue-50 text-blue-900"
+                    : "border-gray-200 hover:border-gray-300 bg-white text-gray-700"
                 }`}
               >
-                <span className="text-2xl shrink-0">{cat.icon}</span>
-                <span className="flex-1 min-w-0">
-                  <span className="block text-sm font-bold text-gray-900">{cat.name}</span>
-                  <span className="block text-xs text-gray-500 truncate">{cat.description}</span>
-                </span>
-                <span
-                  className={`mt-1 w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${
-                    on ? "bg-blue-600 border-blue-600" : "border-gray-300"
-                  }`}
-                >
-                  {on && (
-                    <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3 text-white">
-                      <path
-                        d="M5 12l5 5L20 7"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  )}
-                </span>
+                <CategoryIcon
+                  name={cat.icon}
+                  size={14}
+                  strokeWidth={1.75}
+                  className={on ? "text-blue-600" : "text-gray-400"}
+                />
+                <span className="text-xs font-medium truncate">{cat.name}</span>
               </button>
             )
           })}
@@ -406,82 +431,60 @@ export default function EditSiteForm({
 
       {/* Status / promote */}
       <Section
-        title={status === "live" ? "🟢 Live portal" : "🔵 Demo site"}
-        hint={
-          status === "live"
-            ? "This site is live. Visitors see product cards with a contact-to-order CTA. Fill in the rep contact details below."
-            : "This site is in demo mode — showcase only. Promote to live when the prospect becomes a customer."
-        }
+        title={status === "live" ? "Live portal" : "Demo site"}
+        hint={status === "live" ? "Contact-to-order CTAs visible to visitors." : "Showcase only — promote when they become a customer."}
       >
-        {/* Contact fields — always visible so you can fill them before promoting */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field label="Rep / contact name">
-            <input
-              value={contactName}
-              onChange={(e) => setContactName(e.target.value)}
-              placeholder="Jane Smith"
-              className={inputCls}
-            />
-          </Field>
-          <Field label="Contact email">
-            <input
-              type="email"
-              value={contactEmail}
-              onChange={(e) => setContactEmail(e.target.value)}
-              placeholder="jane@fastsigns.com"
-              className={inputCls}
-            />
-          </Field>
-          <Field label="Contact phone (optional)">
-            <input
-              value={contactPhone}
-              onChange={(e) => setContactPhone(e.target.value)}
-              placeholder="(555) 555-0100"
-              className={inputCls}
-            />
-          </Field>
-          <Field label="Order CTA text">
-            <input
-              value={orderCtaText}
-              onChange={(e) => setOrderCtaText(e.target.value)}
-              placeholder="Contact to order"
-              className={inputCls}
-            />
-          </Field>
-        </div>
+        <Field label="Rep name">
+          <input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Jane Smith" className={inputCls} />
+        </Field>
+        <Field label="Contact email">
+          <input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="jane@fastsigns.com" className={inputCls} />
+        </Field>
+        <Field label="Contact phone">
+          <input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="(555) 555-0100" className={inputCls} />
+        </Field>
+        <Field label="Order CTA text">
+          <input value={orderCtaText} onChange={(e) => setOrderCtaText(e.target.value)} placeholder="Contact to order" className={inputCls} />
+        </Field>
+        <Field label="Status">
+          <div className="flex items-center gap-2">
+            {status === "demo" ? (
+              <button type="button" disabled={busy || !contactEmail.trim()} onClick={() => setStatus("live")}
+                title={!contactEmail.trim() ? "Add a contact email first" : undefined}
+                className="bg-green-600 hover:bg-green-500 disabled:opacity-40 text-white text-xs font-semibold px-3 py-1.5 rounded-md">
+                Promote to live
+              </button>
+            ) : (
+              <button type="button" disabled={busy} onClick={() => setStatus("demo")}
+                className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold px-3 py-1.5 rounded-md border border-gray-200">
+                Demote to demo
+              </button>
+            )}
+            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${status === "live" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>
+              {status === "live" ? "● Live" : "● Demo"}
+            </span>
+          </div>
+        </Field>
+      </Section>
 
-        <div className="pt-2 flex items-center gap-3">
-          {status === "demo" ? (
-            <button
-              type="button"
-              disabled={busy || !contactEmail.trim()}
-              onClick={() => setStatus("live")}
-              title={!contactEmail.trim() ? "Add a contact email first" : undefined}
-              className="bg-green-600 hover:bg-green-500 disabled:opacity-40 text-white text-sm font-semibold px-5 py-2 rounded-lg"
-            >
-              🚀 Promote to live
-            </button>
-          ) : (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => setStatus("demo")}
-              className="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-semibold px-5 py-2 rounded-lg"
-            >
-              ↩ Demote to demo
-            </button>
-          )}
-          <span className="text-xs text-gray-400">
-            {status === "demo"
-              ? "Contact email required to promote"
-              : "Demoting hides the order CTAs but keeps contact info saved"}
-          </span>
-        </div>
+      {/* Access control */}
+      <Section
+        title="Access control"
+        hint="Blank = public. Add domains to gate with magic-link login."
+      >
+        <Field label="Allowed domains" hint="comma-separated, e.g. nike.com">
+          <input
+            value={allowedDomains}
+            onChange={(e) => setAllowedDomains(e.target.value)}
+            placeholder="nike.com, nikegroup.com"
+            className={inputCls}
+          />
+        </Field>
       </Section>
 
       {/* Danger zone */}
-      <section className="bg-white rounded-xl border border-red-200 p-5">
-        <h2 className="text-sm font-bold text-red-700 mb-3">Danger zone</h2>
+      <section className="border border-red-200 rounded-lg p-3">
+        <h2 className="text-xs font-semibold text-red-500 uppercase tracking-wider mb-3">Danger zone</h2>
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
@@ -533,45 +536,44 @@ export default function EditSiteForm({
         )}
       </section>
 
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
-      <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
+      {/* Floating save bar */}
+      <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-white rounded-xl shadow-lg border border-gray-200 px-3 py-2">
+        {saved && <span className="text-xs text-green-600 font-medium">✓ Saved</span>}
+        {error && <span className="text-xs text-red-500 max-w-[180px] truncate" title={error}>{error}</span>}
         <button
           type="submit"
           disabled={busy}
-          className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-semibold px-6 py-2.5 rounded-lg"
+          className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-semibold px-4 py-1.5 rounded-lg"
         >
           {busy ? "Saving…" : "Save"}
         </button>
-        {saved && <span className="text-sm text-green-600 font-medium">✓ Saved</span>}
       </div>
     </form>
   )
 }
 
 const inputCls =
-  "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+  "w-full px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
 
 function Section({
   title,
   hint,
+  action,
   children,
 }: {
   title: string
   hint?: string
+  action?: React.ReactNode
   children: React.ReactNode
 }) {
   return (
-    <section className="bg-white rounded-xl border border-gray-200 p-5">
-      <div className="mb-4">
-        <h2 className="text-sm font-bold text-gray-900">{title}</h2>
-        {hint && <p className="text-xs text-gray-500 mt-0.5">{hint}</p>}
+    <section>
+      <div className="flex items-center gap-3 mb-1.5 pb-1.5 border-b border-gray-100">
+        <h2 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider shrink-0">{title}</h2>
+        {hint && <p className="text-xs text-gray-400 truncate flex-1">{hint}</p>}
+        {action && <div className="ml-auto flex items-center gap-1.5">{action}</div>}
       </div>
-      <div className="space-y-3">{children}</div>
+      <div>{children}</div>
     </section>
   )
 }
@@ -580,17 +582,21 @@ function Field({
   label,
   hint,
   children,
+  wide,
 }: {
   label: string
   hint?: string
   children: React.ReactNode
+  wide?: boolean
 }) {
   return (
-    <label className="block">
-      <span className="block text-xs font-semibold text-gray-700 mb-1">{label}</span>
-      {hint && <span className="block text-xs text-gray-500 mb-1.5">{hint}</span>}
-      {children}
-    </label>
+    <div className={`grid py-1 gap-2 ${wide ? "grid-cols-1" : "grid-cols-[140px_1fr] items-center"}`}>
+      <div>
+        <span className="text-xs text-gray-500">{label}</span>
+        {hint && <span className="block text-[11px] text-gray-400 leading-tight">{hint}</span>}
+      </div>
+      <div>{children}</div>
+    </div>
   )
 }
 
@@ -602,17 +608,17 @@ function ColorInput({
   onChange: (v: string) => void
 }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5">
       <input
         type="color"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-12 h-10 rounded border border-gray-300 cursor-pointer"
+        className="w-7 h-7 rounded border border-gray-300 cursor-pointer p-0.5"
       />
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`${inputCls} font-mono`}
+        className={`${inputCls} font-mono w-24`}
       />
     </div>
   )
@@ -646,7 +652,8 @@ function BrandImageButton({
         title={!productImageUrl.trim() ? "Product needs an image first" : "Open logo placement editor"}
         className="mt-1 text-xs text-blue-600 hover:text-blue-800 disabled:opacity-40 font-semibold flex items-center gap-1"
       >
-        🏷 Place logo on image
+        <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="7" cy="7" r="1" fill="currentColor"/></svg>
+        Place logo on image
       </button>
       {open && (
         <MockupEditor
@@ -762,7 +769,8 @@ function MockupGenerator({
         onClick={handleOpen}
         className="mt-1 text-xs text-purple-600 hover:text-purple-800 font-semibold flex items-center gap-1"
       >
-        <span>🎨</span> Generate mockup
+        <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5"/><path d="M8 14s1.5 2 4 2 4-2 4-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><circle cx="9" cy="10" r="1" fill="currentColor"/><circle cx="15" cy="10" r="1" fill="currentColor"/></svg>
+        Generate mockup
       </button>
     )
   }
@@ -819,8 +827,8 @@ function MockupGenerator({
                       className="w-full h-14 object-cover"
                     />
                   ) : (
-                    <div className="w-full h-14 bg-gray-200 flex items-center justify-center text-gray-400 text-2xl">
-                      🖼
+                    <div className="w-full h-14 bg-gray-100 flex items-center justify-center text-gray-300">
+                      <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5"/><path d="M3 16l5-5 4 4 3-3 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </div>
                   )}
                   <p className="text-[10px] font-medium text-gray-700 px-1.5 py-1 truncate">
@@ -920,6 +928,114 @@ function MockupGenerator({
   )
 }
 
+// ── Compact product image cell ────────────────────────────────
+function ProductImageCell({
+  value,
+  onChange,
+  tenantSlug,
+  productImageUrl,
+  brandLogoUrl,
+  brandPrimaryColor,
+  brandCompanyName,
+}: {
+  value: string
+  onChange: (url: string) => void
+  tenantSlug: string
+  productImageUrl: string
+  brandLogoUrl: string
+  brandPrimaryColor: string
+  brandCompanyName: string
+}) {
+  const [open, setOpen] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState(false)
+
+  async function uploadFile(file: File) {
+    setBusy(true)
+    try {
+      const fd = new FormData()
+      fd.append("file", file)
+      fd.append("kind", "logo")
+      fd.append("slug", tenantSlug)
+      const res = await fetch("/api/master/upload", { method: "POST", body: fd })
+      const json = await res.json()
+      if (res.ok) onChange(json.url as string)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="shrink-0 flex flex-col items-center gap-1">
+      {/* Thumbnail */}
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        title="Change product image"
+        className="w-10 h-10 rounded border border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center hover:border-blue-400 transition-colors"
+      >
+        {busy ? (
+          <svg className="animate-spin w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="30 70" />
+          </svg>
+        ) : value ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={value} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 text-gray-400">
+            <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
+            <path d="M3 16l5-5 4 4 3-3 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </button>
+      {value && (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          className="text-[10px] text-gray-400 hover:text-red-500"
+        >
+          clear
+        </button>
+      )}
+
+      {/* Expanded uploader */}
+      {open && (
+        <div className="absolute z-10 mt-12 right-0 w-64 bg-white border border-gray-200 rounded-xl shadow-lg p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-gray-700">Product image</span>
+            <button type="button" onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600 text-xs">✕</button>
+          </div>
+          <ImageUploader
+            value={value}
+            onChange={(url) => { onChange(url); if (url) setOpen(false) }}
+            slug={tenantSlug}
+            kind="logo"
+            previewAspect="4/3"
+            maxPreviewHeight={100}
+            recommendation="Product image. PNG/JPG/WEBP."
+          />
+          <BrandImageButton
+            tenantSlug={tenantSlug}
+            productImageUrl={productImageUrl}
+            logoUrl={brandLogoUrl}
+            primaryColor={brandPrimaryColor}
+            companyName={brandCompanyName}
+            onUseImage={(url) => { onChange(url); setOpen(false) }}
+          />
+          <MockupGenerator
+            tenantSlug={tenantSlug}
+            productImageUrl={productImageUrl}
+            onUseImage={(url) => { onChange(url); setOpen(false) }}
+          />
+        </div>
+      )}
+      <input ref={inputRef} type="file" accept="image/*" className="hidden"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadFile(f); e.target.value = "" }}
+      />
+    </div>
+  )
+}
+
 // ── Product overrides panel ────────────────────────────────────
 
 function ProductOverridesPanel({
@@ -963,7 +1079,7 @@ function ProductOverridesPanel({
 
   // Group products by category
   const productsByCat = catSlugs.map((slug) => ({
-    cat: catMap.get(slug) ?? { slug, name: slug, icon: "📦", description: "" },
+    cat: catMap.get(slug) ?? { slug, name: slug, icon: "Package", description: "" },
     products: visibleProducts.filter((p) => p.category === slug),
   }))
 
@@ -980,19 +1096,19 @@ function ProductOverridesPanel({
       {productsByCat.map(({ cat, products }) => (
         <div key={cat.slug}>
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-base">{cat.icon}</span>
+            <CategoryIcon name={cat.icon} size={13} strokeWidth={1.75} className="text-gray-500" />
             <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">
               {cat.name}
             </span>
           </div>
-          <div className="divide-y divide-gray-100 border border-gray-200 rounded-lg overflow-hidden">
+          <div className="divide-y divide-gray-100 border border-gray-200 rounded-lg">
             {products.map((p) => {
               const ov = overrides[p.slug] ?? {}
               const disabled = ov.disabled ?? false
               return (
                 <div
                   key={p.slug}
-                  className={`flex flex-col sm:flex-row sm:items-start gap-3 p-3 transition-colors ${
+                  className={`relative flex items-start gap-3 p-3 transition-colors ${
                     disabled ? "bg-gray-50 opacity-60" : "bg-white"
                   }`}
                 >
@@ -1038,90 +1154,50 @@ function ProductOverridesPanel({
                     <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{p.shortDesc}</p>
 
                     {!disabled && (
-                      <div className="mt-2 flex flex-wrap gap-3 items-end">
+                      <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 items-center">
                         {/* Price override */}
-                        <label className="block">
-                          <span className="block text-xs font-semibold text-gray-600 mb-1">
-                            Starting price
-                          </span>
-                          <div className="flex items-center gap-1">
-                            <span className="text-sm text-gray-500">$</span>
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              placeholder={String(p.startingPrice)}
-                              value={ov.price ?? ""}
-                              onChange={(e) => {
-                                const v = e.target.value
-                                onChange(p.slug, {
-                                  price: v === "" ? undefined : parseFloat(v),
-                                })
-                              }}
-                              className="w-24 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            {ov.price !== undefined && (
-                              <button
-                                type="button"
-                                onClick={() => onChange(p.slug, { price: undefined })}
-                                className="text-xs text-gray-400 hover:text-gray-600"
-                                title="Reset to default"
-                              >
-                                ✕
-                              </button>
-                            )}
-                          </div>
-                          {ov.price !== undefined && (
-                            <span className="text-xs text-gray-400 mt-0.5 block">
-                              Default: ${p.startingPrice}
-                            </span>
-                          )}
-                        </label>
-
-                        {/* Featured toggle */}
-                        <label className="flex items-center gap-1.5 cursor-pointer">
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-gray-400">$</span>
                           <input
-                            type="checkbox"
-                            checked={ov.featured ?? p.featured}
-                            onChange={(e) =>
-                              onChange(p.slug, { featured: e.target.checked })
-                            }
-                            className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder={String(p.startingPrice)}
+                            value={ov.price ?? ""}
+                            onChange={(e) => {
+                              const v = e.target.value
+                              onChange(p.slug, { price: v === "" ? undefined : parseFloat(v) })
+                            }}
+                            className="w-20 px-1.5 py-0.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                           />
-                          <span className="text-xs text-gray-600">Featured</span>
+                          {ov.price !== undefined && (
+                            <button type="button" onClick={() => onChange(p.slug, { price: undefined })}
+                              className="text-[10px] text-gray-400 hover:text-gray-600" title="Reset price">✕</button>
+                          )}
+                        </div>
+                        {/* Featured */}
+                        <label className="flex items-center gap-1 cursor-pointer">
+                          <input type="checkbox" checked={ov.featured ?? p.featured}
+                            onChange={(e) => onChange(p.slug, { featured: e.target.checked })}
+                            className="w-3 h-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-xs text-gray-500">Featured</span>
                         </label>
                       </div>
                     )}
                   </div>
 
-                  {/* Product image upload + mockup generator */}
+                  {/* Product image — compact thumbnail + uploader */}
                   {!disabled && (
-                    <div className="w-full sm:w-44 shrink-0">
-                      <span className="block text-xs font-semibold text-gray-600 mb-1">
-                        Product image
-                      </span>
-                      <ImageUploader
-                        value={ov.imageUrl ?? ""}
-                        onChange={(url) => onChange(p.slug, { imageUrl: url || undefined })}
-                        slug={tenantSlug}
-                        kind="logo"
-                        previewAspect="4/3"
-                        recommendation="Product image. PNG/JPG/WEBP. Up to 10 MB."
-                      />
-                      <BrandImageButton
-                        tenantSlug={tenantSlug}
-                        productImageUrl={ov.imageUrl ?? p.imageUrl ?? ""}
-                        logoUrl={brandLogoUrl}
-                        primaryColor={brandPrimaryColor}
-                        companyName={brandCompanyName}
-                        onUseImage={(url) => onChange(p.slug, { imageUrl: url })}
-                      />
-                      <MockupGenerator
-                        tenantSlug={tenantSlug}
-                        productImageUrl={ov.imageUrl ?? p.imageUrl ?? ""}
-                        onUseImage={(url) => onChange(p.slug, { imageUrl: url })}
-                      />
-                    </div>
+                    <ProductImageCell
+                      value={ov.imageUrl ?? ""}
+                      onChange={(url) => onChange(p.slug, { imageUrl: url || undefined })}
+                      tenantSlug={tenantSlug}
+                      productImageUrl={ov.imageUrl ?? p.imageUrl ?? ""}
+                      brandLogoUrl={brandLogoUrl}
+                      brandPrimaryColor={brandPrimaryColor}
+                      brandCompanyName={brandCompanyName}
+                    />
                   )}
                 </div>
               )

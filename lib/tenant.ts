@@ -16,6 +16,8 @@ export type TenantBrand = {
   primaryLight?: string
   accentColor?: string
   accentDark?: string
+  navTextColor?: string
+  heroCta1TextColor?: string
   // Hero
   heroHeading?: string
   heroSubheading?: string
@@ -71,6 +73,7 @@ export type Tenant = {
   status: "demo" | "live"
   admin_email: string | null
   archived: boolean
+  allowed_domains: string[]
   created_at: string
   updated_at: string
 }
