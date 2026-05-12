@@ -244,7 +244,7 @@ export default function EditSiteForm({
   }
 
   return (
-    <form onSubmit={save} className="max-w-2xl space-y-6">
+    <form onSubmit={save} className="max-w-2xl space-y-4">
       <Section title="Identity">
         <Field label="Display name">
           <input required value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
@@ -279,23 +279,18 @@ export default function EditSiteForm({
         </div>
       }>
         <Field label="Colors">
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <div className="text-xs text-gray-400 mb-1">Primary (nav/footer bg)</div>
-              <ColorInput value={primaryColor} onChange={setPrimaryColor} />
-            </div>
-            <div>
-              <div className="text-xs text-gray-400 mb-1">Accent (CTA bg)</div>
-              <ColorInput value={accentColor} onChange={setAccentColor} />
-            </div>
-            <div>
-              <div className="text-xs text-gray-400 mb-1">Nav text</div>
-              <ColorInput value={navTextColor} onChange={setNavTextColor} />
-            </div>
-            <div>
-              <div className="text-xs text-gray-400 mb-1">CTA button text</div>
-              <ColorInput value={heroCta1TextColor} onChange={setHeroCta1TextColor} />
-            </div>
+          <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+            {[
+              { label: "Primary", value: primaryColor, onChange: setPrimaryColor },
+              { label: "Accent", value: accentColor, onChange: setAccentColor },
+              { label: "Nav text", value: navTextColor, onChange: setNavTextColor },
+              { label: "CTA text", value: heroCta1TextColor, onChange: setHeroCta1TextColor },
+            ].map(({ label, value, onChange }) => (
+              <div key={label} className="flex items-center gap-1.5">
+                <span className="text-[11px] text-gray-400 w-16 shrink-0">{label}</span>
+                <ColorInput value={value} onChange={onChange} />
+              </div>
+            ))}
           </div>
         </Field>
         <Field label="Show pricing">
@@ -488,7 +483,7 @@ export default function EditSiteForm({
       </Section>
 
       {/* Danger zone */}
-      <section className="border border-red-200 rounded-lg p-4">
+      <section className="border border-red-200 rounded-lg p-3">
         <h2 className="text-xs font-semibold text-red-500 uppercase tracking-wider mb-3">Danger zone</h2>
         <div className="flex flex-wrap items-center gap-3">
           <button
@@ -558,7 +553,7 @@ export default function EditSiteForm({
 }
 
 const inputCls =
-  "w-full px-2.5 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+  "w-full px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
 
 function Section({
   title,
@@ -573,12 +568,12 @@ function Section({
 }) {
   return (
     <section>
-      <div className="flex items-center gap-3 mb-3 pb-2 border-b border-gray-100">
-        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider shrink-0">{title}</h2>
+      <div className="flex items-center gap-3 mb-1.5 pb-1.5 border-b border-gray-100">
+        <h2 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider shrink-0">{title}</h2>
         {hint && <p className="text-xs text-gray-400 truncate flex-1">{hint}</p>}
         {action && <div className="ml-auto flex items-center gap-1.5">{action}</div>}
       </div>
-      <div className="space-y-0.5">{children}</div>
+      <div>{children}</div>
     </section>
   )
 }
@@ -595,10 +590,10 @@ function Field({
   wide?: boolean
 }) {
   return (
-    <div className={`grid py-2 gap-3 ${wide ? "grid-cols-1" : "grid-cols-[180px_1fr] items-start"}`}>
-      <div className="pt-1.5">
-        <span className="text-xs font-medium text-gray-600">{label}</span>
-        {hint && <span className="block text-xs text-gray-400 mt-0.5 leading-tight">{hint}</span>}
+    <div className={`grid py-1 gap-2 ${wide ? "grid-cols-1" : "grid-cols-[140px_1fr] items-center"}`}>
+      <div>
+        <span className="text-xs text-gray-500">{label}</span>
+        {hint && <span className="block text-[11px] text-gray-400 leading-tight">{hint}</span>}
       </div>
       <div>{children}</div>
     </div>
@@ -613,17 +608,17 @@ function ColorInput({
   onChange: (v: string) => void
 }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5">
       <input
         type="color"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-12 h-10 rounded border border-gray-300 cursor-pointer"
+        className="w-7 h-7 rounded border border-gray-300 cursor-pointer p-0.5"
       />
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`${inputCls} font-mono`}
+        className={`${inputCls} font-mono w-24`}
       />
     </div>
   )
