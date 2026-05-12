@@ -1,14 +1,21 @@
 import type { NextConfig } from "next";
 
+// Reserved top-level paths that must NOT be rewritten to /sites/:slug
+const RESERVED = "master|api|auth|sites|_next|favicon.ico"
+
 const nextConfig: NextConfig = {
   async rewrites() {
     return [
-      // Serve the Reddy Ice portal at the root so fastsigns-demos.vercel.app
-      // works as a clean single-tenant URL for prospect sharing.
-      { source: "/",               destination: "/sites/reddy-ice" },
-      { source: "/login",          destination: "/sites/reddy-ice/login" },
-      { source: "/products",       destination: "/sites/reddy-ice/products" },
-      { source: "/products/:slug", destination: "/sites/reddy-ice/products/:slug" },
+      // Clean tenant URLs: fastsigns-demos.vercel.app/:slug  →  /sites/:slug
+      // so each prospect gets a shareable URL without the /sites/ prefix.
+      {
+        source: `/:slug((?!${RESERVED})[^/]+)/:path*`,
+        destination: "/sites/:slug/:path*",
+      },
+      {
+        source: `/:slug((?!${RESERVED})[^/]+)`,
+        destination: "/sites/:slug",
+      },
     ]
   },
 };
