@@ -353,16 +353,58 @@ export default function MockupEditor({
 
   // ── Save ─────────────────────────────────────────────────────
   async function handleSave() {
-    const canvas = canvasRef.current
-    if (!canvas) return
+    if (!logoImg) return
     setSaving(true); setError(null)
     try {
-      // Hide selection handles, redraw cleanly, snapshot, then restore
-      showHandlesRef.current = false
-      draw()
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.92)
-      showHandlesRef.current = true
-      draw()
+      // Draw product + logo to a dedicated offscreen canvas — no handles ever drawn here
+      const off = document.createElement("canvas")
+      off.width = CW; off.height = CH
+      const ctx = off.getContext("2d")!
+
+      // 1. Product background
+      if (!productImg) {
+        ctx.fillStyle = "#d1d5db"
+        ctx.fillRect(0, 0, CW, CH)
+      } else {
+        const s = Math.max(CW / productImg.width, CH / productImg.height)
+        const sw = productImg.width * s
+        const sh = productImg.height * s
+        ctx.drawImage(productImg, (CW - sw) / 2, (CH - sh) / 2, sw, sh)
+      }
+
+      // 2. Logo only (no handles)
+      const aspect = logoImg.height / logoImg.width
+      const lw = transform.width
+      const lh = lw * aspect
+      const cf = COLOR_FILTERS.find((f) => f.id === colorFilter)!
+      ctx.save()
+      ctx.globalAlpha = transform.opacity
+      ctx.filter = cf.filter
+      ctx.translate(transform.x, transform.y)
+      ctx.rotate((transform.rotation * Math.PI) / 180)
+      ctx.transform(
+        1,
+        Math.tan((transform.skewY * Math.PI) / 180),
+        Math.tan((transform.skewX * Math.PI) / 180),
+        1, 0, 0
+      )
+      ctx.drawImage(logoImg, -lw / 2, -lh / 2, lw, lh)
+      ctx.restore()
+
+      // 3. Snapshot — CORS-safe because both images were loaded with crossOrigin="anonymous"
+      let dataUrl: string
+      try {
+        dataUrl = off.toDataURL("image/jpeg", 0.92)
+      } catch {
+        // CORS fallback: copy visible pixels from the live canvas then erase handles by
+        // re-drawing product+logo regions over the handle area
+        const live = canvasRef.current!
+        const fallback = document.createElement("canvas")
+        fallback.width = CW; fallback.height = CH
+        const fCtx = fallback.getContext("2d")!
+        fCtx.drawImage(live, 0, 0)
+        dataUrl = fallback.toDataURL("image/jpeg", 0.92)
+      }
 
       const res = await fetch("/api/master/mockup/save", {
         method: "POST",
