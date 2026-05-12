@@ -1,6 +1,11 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { isMasterAuthed } from "@/lib/master-auth"
+
+export const metadata: Metadata = {
+  title: "Demo Builder · FASTSIGNS",
+}
 
 export default async function AuthedLayout({
   children,
