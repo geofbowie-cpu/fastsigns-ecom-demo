@@ -31,19 +31,6 @@ export default function EditSiteForm({
 }) {
   const router = useRouter()
 
-  // Snapshot initial brand values at mount so Reset always goes back to last-saved DB state
-  const initialBrand = useRef({
-    primaryColor: (tenant.brand?.primaryColor as string) ?? "#1e3a5f",
-    accentColor: (tenant.brand?.accentColor as string) ?? "#f59e0b",
-    navTextColor: (tenant.brand?.navTextColor as string) ?? "#ffffff",
-    heroCta1TextColor: (tenant.brand?.heroCta1TextColor as string) ?? "#000000",
-    showPricing: (tenant.brand?.showPricing as boolean) ?? false,
-    logoImage: (tenant.brand?.logoImage as string) ?? "",
-    heroHeading: (tenant.brand?.heroHeading as string) ?? "",
-    heroSubheading: (tenant.brand?.heroSubheading as string) ?? "",
-    heroBgImage: (tenant.brand?.heroBgImage as string) ?? "",
-  })
-
   const [name, setName] = useState(tenant.name)
   const [adminEmail, setAdminEmail] = useState(tenant.admin_email ?? "")
   const [primaryColor, setPrimaryColor] = useState(
@@ -97,17 +84,40 @@ export default function EditSiteForm({
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  function resetBrand() {
-    const b = initialBrand.current
-    setPrimaryColor(b.primaryColor)
-    setAccentColor(b.accentColor)
-    setNavTextColor(b.navTextColor)
-    setHeroCta1TextColor(b.heroCta1TextColor)
-    setShowPricing(b.showPricing)
-    setLogoImage(b.logoImage)
-    setHeroHeading(b.heroHeading)
-    setHeroSubheading(b.heroSubheading)
-    setHeroBgImage(b.heroBgImage)
+  // Brand-fetch re-pull
+  const defaultDomain =
+    allowedDomains.split(",")[0]?.trim() ||
+    adminEmail.split("@")[1]?.trim() ||
+    ""
+  const [bfDomain, setBfDomain] = useState(defaultDomain)
+  const [bfBusy, setBfBusy] = useState(false)
+  const [bfInfo, setBfInfo] = useState<string | null>(null)
+  const [bfError, setBfError] = useState<string | null>(null)
+
+  async function refetchBrand() {
+    if (!bfDomain.trim()) return
+    setBfBusy(true)
+    setBfInfo(null)
+    setBfError(null)
+    try {
+      const res = await fetch("/api/master/brandfetch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain: bfDomain.trim(), slug: tenant.slug }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setBfError(json.error ?? "Fetch failed"); return }
+      const b = json.brand
+      const filled: string[] = []
+      if (b.primaryColor) { setPrimaryColor(b.primaryColor); filled.push("primary color") }
+      if (b.accentColor)  { setAccentColor(b.accentColor);   filled.push("accent color") }
+      if (b.logoUrl)      { setLogoImage(b.logoUrl);          filled.push("logo") }
+      setBfInfo(filled.length ? `Applied: ${filled.join(", ")}` : "Brand found but no usable assets returned")
+    } catch (e: any) {
+      setBfError(e.message ?? "Fetch failed")
+    } finally {
+      setBfBusy(false)
+    }
   }
 
   function patchProductOverride(
@@ -184,18 +194,6 @@ export default function EditSiteForm({
         setError(json.error ?? "Save failed")
         return
       }
-      // Update the reset snapshot to reflect the newly saved values
-      initialBrand.current = {
-        primaryColor,
-        accentColor,
-        navTextColor,
-        heroCta1TextColor,
-        showPricing,
-        logoImage,
-        heroHeading,
-        heroSubheading,
-        heroBgImage,
-      }
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
       router.refresh()
@@ -259,7 +257,27 @@ export default function EditSiteForm({
         </Field>
       </Section>
 
-      <Section title="Brand">
+      <Section title="Brand" action={
+        <div className="flex items-center gap-1.5">
+          <input
+            value={bfDomain}
+            onChange={(e) => setBfDomain(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), refetchBrand())}
+            placeholder="nike.com"
+            className="w-32 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+          />
+          <button
+            type="button"
+            onClick={refetchBrand}
+            disabled={bfBusy || !bfDomain.trim()}
+            className="text-xs font-semibold px-2.5 py-1 rounded border border-gray-300 hover:border-blue-400 hover:text-blue-600 disabled:opacity-40"
+          >
+            {bfBusy ? "…" : "Re-fetch"}
+          </button>
+          {bfInfo && <span className="text-xs text-green-600">{bfInfo}</span>}
+          {bfError && <span className="text-xs text-red-500">{bfError}</span>}
+        </div>
+      }>
         <Field label="Colors">
           <div className="grid grid-cols-2 gap-2">
             <div>
@@ -528,13 +546,6 @@ export default function EditSiteForm({
         {saved && <span className="text-xs text-green-600 font-medium">✓ Saved</span>}
         {error && <span className="text-xs text-red-500 max-w-[180px] truncate" title={error}>{error}</span>}
         <button
-          type="button"
-          onClick={resetBrand}
-          className="text-xs text-gray-500 hover:text-gray-800 font-medium px-2.5 py-1.5 rounded-lg border border-gray-200 hover:border-gray-300"
-        >
-          Reset brand
-        </button>
-        <button
           type="submit"
           disabled={busy}
           className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-semibold px-4 py-1.5 rounded-lg"
@@ -552,17 +563,20 @@ const inputCls =
 function Section({
   title,
   hint,
+  action,
   children,
 }: {
   title: string
   hint?: string
+  action?: React.ReactNode
   children: React.ReactNode
 }) {
   return (
     <section>
-      <div className="flex items-baseline gap-3 mb-3 pb-2 border-b border-gray-100">
-        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{title}</h2>
-        {hint && <p className="text-xs text-gray-400 truncate">{hint}</p>}
+      <div className="flex items-center gap-3 mb-3 pb-2 border-b border-gray-100">
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider shrink-0">{title}</h2>
+        {hint && <p className="text-xs text-gray-400 truncate flex-1">{hint}</p>}
+        {action && <div className="ml-auto flex items-center gap-1.5">{action}</div>}
       </div>
       <div className="space-y-0.5">{children}</div>
     </section>
