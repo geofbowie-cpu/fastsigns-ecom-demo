@@ -8,13 +8,40 @@ export async function GET(req: NextRequest) {
   const tokenHash = searchParams.get("token_hash")
   const type = searchParams.get("type")
 
-  if (!tokenHash || !type) {
+  // ── Supabase implicit-flow redirect ──────────────────────────────────────
+  // After verifying the magic link Supabase redirects here with the
+  // access_token in the URL *hash*. Hashes never reach the server, so we
+  // return a tiny page whose inline script posts the token to
+  // /api/auth/set-master-session.
+  if (!tokenHash) {
+    const html = `<!doctype html><html><head><meta charset="utf-8">
+<script>
+(function(){
+  var h = new URLSearchParams(location.hash.slice(1));
+  var token = h.get('access_token');
+  if (!token) { location.replace('/?error=missing_code'); return; }
+  fetch('/api/auth/set-master-session', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ access_token: token })
+  }).then(function(r){
+    if (r.ok) { location.replace('/master'); return; }
+    return r.json().then(function(j){
+      location.replace('/?error=' + encodeURIComponent(j.error || 'auth_failed'));
+    });
+  });
+})();
+</script>
+</head><body>Signing you in…</body></html>`
+    return new Response(html, { headers: { "Content-Type": "text/html" } })
+  }
+
+  // ── Legacy token_hash flow (kept for backward compatibility) ─────────────
+  if (!type) {
     return NextResponse.redirect(`${origin}/?error=missing_code`)
   }
 
-  // Verify the token hash — no PKCE needed with this approach
-  const supabase = authAdminClient()
-  const { data, error } = await supabase.auth.verifyOtp({
+  const { data, error } = await authAdminClient().auth.verifyOtp({
     token_hash: tokenHash,
     type: type as "email",
   })
@@ -26,7 +53,6 @@ export async function GET(req: NextRequest) {
 
   const email = data.user.email.toLowerCase()
 
-  // Verify email is in the portal allow-list
   const { data: portalUser } = await adminClient()
     .from("portal_users")
     .select("email")
@@ -37,13 +63,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${origin}/?error=not_authorized`)
   }
 
-  // Update last sign-in timestamp
   await adminClient()
     .from("portal_users")
     .update({ last_sign_in_at: new Date().toISOString() })
     .eq("email", email)
 
-  // Set master session cookie directly on the redirect response
   const res = NextResponse.redirect(`${origin}/master`)
   setMasterSessionOnResponse(res)
   return res
