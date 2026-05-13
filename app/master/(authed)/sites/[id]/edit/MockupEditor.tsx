@@ -248,7 +248,7 @@ export default function MockupEditor({
     ctx.textBaseline = "middle"
     ctx.fillText("↻", rx, ry + 0.5)
     ctx.restore()
-  }, [productImg, logoImg, transform, colorFilter, hoveredHandle])
+  }, [productImg, logoImg, transform, colorFilter, hoveredHandle, selected])
 
   useEffect(() => { draw() }, [draw])
 
@@ -465,13 +465,12 @@ export default function MockupEditor({
                       <span className="flex-1 text-[11px] text-gray-600 truncate">
                         {entry.label ?? `Logo ${idx + 1}`}
                       </span>
-                      {logoLibrary.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); removeLogo(idx) }}
-                          className="text-gray-300 hover:text-red-400 text-xs"
-                        >✕</button>
-                      )}
+                      <button
+                        type="button"
+                        title="Remove this logo"
+                        onClick={(e) => { e.stopPropagation(); removeLogo(idx) }}
+                        className="w-5 h-5 rounded flex items-center justify-center text-gray-400 hover:text-white hover:bg-red-500 text-xs font-bold transition-colors"
+                      >✕</button>
                     </div>
                   ))}
                 </div>

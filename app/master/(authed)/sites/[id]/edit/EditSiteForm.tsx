@@ -1071,6 +1071,17 @@ function ProductImageCell({
           <div className="absolute inset-0 rounded-lg bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 pointer-events-none group-hover:pointer-events-auto">
             <button
               type="button"
+              title="View"
+              onClick={(e) => { e.stopPropagation(); setMode("lightbox") }}
+              className="w-6 h-6 rounded bg-white/90 hover:bg-white flex items-center justify-center"
+            >
+              <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3 text-gray-800">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
+              </svg>
+            </button>
+            <button
+              type="button"
               title="Edit"
               onClick={(e) => { e.stopPropagation(); setMode("editor") }}
               className="w-6 h-6 rounded bg-white/90 hover:bg-white flex items-center justify-center"
