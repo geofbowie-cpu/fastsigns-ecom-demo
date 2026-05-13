@@ -121,7 +121,10 @@ export default function MockupEditor({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hoveredHandle, setHoveredHandle] = useState<string | null>(null)
-  const showHandlesRef = useRef(true)
+  // Selection — handles only render when selected. Defaults to true on open.
+  const [selected, setSelected] = useState(true)
+  const selectedRef = useRef(true)
+  useEffect(() => { selectedRef.current = selected }, [selected])
 
   // ── Load product image ───────────────────────────────────────
   useEffect(() => {
@@ -183,8 +186,8 @@ export default function MockupEditor({
     ctx.restore()
 
     // ── Draw selection UI ────────────────────────────────────
-    // Skip when capturing a clean image for save
-    if (!showHandlesRef.current) return
+    // Only when selected, and skipped during save capture.
+    if (!selectedRef.current) return
     const handles = getHandles(transform, hw, hh)
 
     // Bounding box
@@ -259,17 +262,20 @@ export default function MockupEditor({
   }
 
   // ── Hit test ─────────────────────────────────────────────────
-  function hitTest(mx: number, my: number): Handle | null {
+  // includeHandles=false skips the corner/rotate handles (used when not selected
+  // so a click on the logo body re-selects it without grabbing an invisible handle).
+  function hitTest(mx: number, my: number, includeHandles = true): Handle | null {
     if (!logoImg) return null
     const aspect = logoImg.height / logoImg.width
     const lw = transform.width, lh = lw * aspect
     const hw = lw / 2, hh = lh / 2
     const handles = getHandles(transform, hw, hh)
 
-    // Check handles first (corners + rotate)
-    for (const key of ["scale-tl", "scale-tr", "scale-bl", "scale-br", "rotate"] as const) {
-      const [hx, hy] = handles[key] as [number, number]
-      if (dist(mx, my, hx, hy) <= HR + 4) return key as Handle
+    if (includeHandles) {
+      for (const key of ["scale-tl", "scale-tr", "scale-bl", "scale-br", "rotate"] as const) {
+        const [hx, hy] = handles[key] as [number, number]
+        if (dist(mx, my, hx, hy) <= HR + 4) return key as Handle
+      }
     }
 
     // Check inside logo body
@@ -283,11 +289,23 @@ export default function MockupEditor({
   function handlePointerDown(e: React.PointerEvent<HTMLCanvasElement>) {
     if (!logoImg) return
     const [mx, my] = getCanvasXY(e)
-    const handle = hitTest(mx, my)
-    if (!handle) return
+    const hit = hitTest(mx, my, selected)
+
+    // Click on empty area while selected → deselect, no drag
+    if (!hit) {
+      if (selected) setSelected(false)
+      return
+    }
+
+    // Click on logo while not selected → just select (no drag)
+    if (!selected) {
+      setSelected(true)
+      return
+    }
+
     e.currentTarget.setPointerCapture(e.pointerId)
     setDragState({
-      handle,
+      handle: hit,
       startMX: mx,
       startMY: my,
       startT: { ...transform },
@@ -299,9 +317,9 @@ export default function MockupEditor({
     const [mx, my] = getCanvasXY(e)
 
     if (!dragState) {
-      // Hover highlight
-      const h = hitTest(mx, my)
-      setHoveredHandle(h)
+      // Hover highlight — only show handle hover if selected
+      const h = hitTest(mx, my, selected)
+      setHoveredHandle(selected ? h : null)
       const cursor =
         h === "move" ? "move" :
         h === "rotate" ? "crosshair" :
@@ -355,55 +373,20 @@ export default function MockupEditor({
   async function handleSave() {
     if (!logoImg) return
     setSaving(true); setError(null)
+
+    // Hide handles on the live canvas before capturing.
+    // selectedRef drives draw()'s handle rendering — flipping it + calling
+    // draw() synchronously redraws without handles.
+    const prevSelected = selectedRef.current
+    selectedRef.current = false
+    draw()
+
     try {
-      // Draw product + logo to a dedicated offscreen canvas — no handles ever drawn here
-      const off = document.createElement("canvas")
-      off.width = CW; off.height = CH
-      const ctx = off.getContext("2d")!
-
-      // 1. Product background
-      if (!productImg) {
-        ctx.fillStyle = "#d1d5db"
-        ctx.fillRect(0, 0, CW, CH)
-      } else {
-        const s = Math.max(CW / productImg.width, CH / productImg.height)
-        const sw = productImg.width * s
-        const sh = productImg.height * s
-        ctx.drawImage(productImg, (CW - sw) / 2, (CH - sh) / 2, sw, sh)
-      }
-
-      // 2. Logo only (no handles)
-      const aspect = logoImg.height / logoImg.width
-      const lw = transform.width
-      const lh = lw * aspect
-      const cf = COLOR_FILTERS.find((f) => f.id === colorFilter)!
-      ctx.save()
-      ctx.globalAlpha = transform.opacity
-      ctx.filter = cf.filter
-      ctx.translate(transform.x, transform.y)
-      ctx.rotate((transform.rotation * Math.PI) / 180)
-      ctx.transform(
-        1,
-        Math.tan((transform.skewY * Math.PI) / 180),
-        Math.tan((transform.skewX * Math.PI) / 180),
-        1, 0, 0
-      )
-      ctx.drawImage(logoImg, -lw / 2, -lh / 2, lw, lh)
-      ctx.restore()
-
-      // 3. Snapshot — CORS-safe because both images were loaded with crossOrigin="anonymous"
       let dataUrl: string
       try {
-        dataUrl = off.toDataURL("image/jpeg", 0.92)
+        dataUrl = canvasRef.current!.toDataURL("image/jpeg", 0.92)
       } catch {
-        // CORS fallback: copy visible pixels from the live canvas then erase handles by
-        // re-drawing product+logo regions over the handle area
-        const live = canvasRef.current!
-        const fallback = document.createElement("canvas")
-        fallback.width = CW; fallback.height = CH
-        const fCtx = fallback.getContext("2d")!
-        fCtx.drawImage(live, 0, 0)
-        dataUrl = fallback.toDataURL("image/jpeg", 0.92)
+        throw new Error("Cannot save: image source is CORS-blocked. Check that the product and logo image hosts return Access-Control-Allow-Origin.")
       }
 
       const res = await fetch("/api/master/mockup/save", {
@@ -418,6 +401,9 @@ export default function MockupEditor({
     } catch (e: any) {
       setError(e.message)
     } finally {
+      // Restore handles
+      selectedRef.current = prevSelected
+      draw()
       setSaving(false)
     }
   }
@@ -608,7 +594,7 @@ export default function MockupEditor({
                 {saving ? "Saving…" : "✓ Use as product image"}
               </button>
               <p className="text-[10px] text-gray-400 text-center">
-                Drag handles to scale · ↻ to rotate · drag body to move
+                Click logo to select · drag to move · ↻ to rotate · click off to deselect
               </p>
             </div>
           </div>
