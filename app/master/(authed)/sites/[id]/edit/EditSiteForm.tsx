@@ -258,29 +258,30 @@ export default function EditSiteForm({
         </Field>
       </Section>
 
-      <Section title="Brand" action={
-        <div className="flex items-center gap-1.5">
-          <input
-            value={bfDomain}
-            onChange={(e) => setBfDomain(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), refetchBrand())}
-            placeholder="nike.com"
-            className="w-32 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
-          />
-          <button
-            type="button"
-            onClick={refetchBrand}
-            disabled={bfBusy || !bfDomain.trim()}
-            className="text-xs font-semibold px-2.5 py-1 rounded border border-gray-300 hover:border-blue-400 hover:text-blue-600 disabled:opacity-40"
-          >
-            {bfBusy ? "…" : "Re-fetch"}
-          </button>
-          {bfInfo && <span className="text-xs text-green-600">{bfInfo}</span>}
-          {bfError && <span className="text-xs text-red-500">{bfError}</span>}
-        </div>
-      }>
+      <Section title="Brand">
+        <Field label="Re-fetch from domain">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <input
+              value={bfDomain}
+              onChange={(e) => setBfDomain(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), refetchBrand())}
+              placeholder="nike.com"
+              className="w-40 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+            />
+            <button
+              type="button"
+              onClick={refetchBrand}
+              disabled={bfBusy || !bfDomain.trim()}
+              className="text-xs font-semibold px-2.5 py-1 rounded border border-gray-300 hover:border-blue-400 hover:text-blue-600 disabled:opacity-40"
+            >
+              {bfBusy ? "…" : "Re-fetch"}
+            </button>
+            {bfInfo && <span className="text-xs text-green-600">{bfInfo}</span>}
+            {bfError && <span className="text-xs text-red-500">{bfError}</span>}
+          </div>
+        </Field>
         <Field label="Colors">
-          <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
             {[
               { label: "Primary", value: primaryColor, onChange: setPrimaryColor },
               { label: "Accent", value: accentColor, onChange: setAccentColor },
@@ -288,7 +289,7 @@ export default function EditSiteForm({
               { label: "CTA text", value: heroCta1TextColor, onChange: setHeroCta1TextColor },
             ].map(({ label, value, onChange }) => (
               <div key={label} className="flex items-center gap-1.5">
-                <span className="text-[11px] text-gray-400 w-16 shrink-0">{label}</span>
+                <span className="text-[11px] text-gray-400 w-14 shrink-0">{label}</span>
                 <ColorInput value={value} onChange={onChange} />
               </div>
             ))}
