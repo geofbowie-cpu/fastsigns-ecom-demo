@@ -3,6 +3,37 @@
 Backlog of planned work for the FASTSIGNS Demo Builder. Items here are scoped
 but not yet started.
 
+## Custom SMTP for magic-link emails
+
+**Goal:** Replace Supabase's built-in email (4/hr rate-limited free tier) with
+custom SMTP so magic links deliver reliably from a verified `@fastsigns.com`
+or similar domain.
+
+**Effort:** ~½ day. Verify a domain in Resend/SendGrid/Mailgun (DNS records),
+add SMTP creds to the Supabase project (Dashboard → Auth → SMTP Settings),
+done.
+
+**Why later:** master login is on password for now, so this isn't blocking.
+Tenant magic links work for occasional testing but won't scale to a real
+prospect rollout without SMTP.
+
+## Restore magic-link login at root
+
+**Goal:** Switch `/` back to a magic-link login (instead of master password)
+once SMTP is set up. Code is already in the repo at
+`app/api/auth/magic-link/route.ts` and `app/auth/callback/route.ts` — just
+swap the root `app/page.tsx` redirect.
+
+**Effort:** ~30 min after SMTP is live.
+
+## Fix Vercel git auto-deploy
+
+**Goal:** Pushes to `main` should trigger automatic production deploys. They
+currently don't — we have to `vercel deploy --prod` manually.
+
+**Effort:** ~15 min. Likely the GitHub integration is disconnected or the
+production branch isn't set. Vercel Dashboard → Project → Settings → Git.
+
 ## DAM integration — pull product/logo images from the SOAR DAM
 
 **Goal:** Inside the product image editor (and logo library in the mockup
