@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import Link from "next/link"
 import { listTenants, type Tenant } from "@/lib/tenant"
 import { adminClient } from "@/lib/supabase"
