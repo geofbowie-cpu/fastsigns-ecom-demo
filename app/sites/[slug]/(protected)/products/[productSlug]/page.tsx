@@ -42,7 +42,10 @@ export default async function ProductDetailPage({
 
   const isLive = tenant.status === "live"
   const mailSubject = encodeURIComponent(`Order inquiry: ${product.name}`)
-  const mailHref = `mailto:${b.contactEmail}?subject=${mailSubject}`
+  // Fall back to supportEmail if the tenant has no contactEmail. supportEmail
+  // is always populated via resolveBrand (defaults to support@fastsigns.com).
+  const ctaEmail = b.contactEmail || b.supportEmail
+  const mailHref = `mailto:${ctaEmail}?subject=${mailSubject}`
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -206,7 +209,7 @@ export default async function ProductDetailPage({
             )}
 
             {/* CTA */}
-            {isLive && b.contactEmail ? (
+            {isLive ? (
               <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
                 <div>
                   <h3 className="font-bold text-gray-900 text-lg">Ready to order?</h3>
@@ -234,15 +237,13 @@ export default async function ProductDetailPage({
                 )}
               </div>
             ) : (
-              !isLive && b.contactEmail && (
-                <a
-                  href={mailHref}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm text-white hover:opacity-90"
-                  style={{ backgroundColor: b.primaryColor }}
-                >
-                  ✉ Get a quote →
-                </a>
-              )
+              <a
+                href={mailHref}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm text-white hover:opacity-90"
+                style={{ backgroundColor: b.primaryColor }}
+              >
+                ✉ Get a quote →
+              </a>
             )}
           </div>
         </div>
