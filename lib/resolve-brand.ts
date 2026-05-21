@@ -53,60 +53,66 @@ const GENERIC_DEFAULTS = {
   supportEmail: "support@fastsigns.com",
 }
 
+// Treats empty strings as missing — needed because `??` only catches null/undefined,
+// and most tenants have "" saved for fields they never explicitly set.
+function str(v: unknown, fallback: string): string {
+  if (typeof v !== "string" || v.trim() === "") return fallback
+  return v
+}
+
 export function resolveBrand(brand: TenantBrand) {
-  const primary = brand.primaryColor ?? GENERIC_DEFAULTS.primaryColor
-  const accent = brand.accentColor ?? GENERIC_DEFAULTS.accentColor
-  const primaryDark = brand.primaryDark ?? adjustBrightness(primary, -25)
-  const primaryLight = brand.primaryLight ?? adjustBrightness(primary, 35)
-  const company = brand.company ?? GENERIC_DEFAULTS.company
+  const primary = str(brand.primaryColor, GENERIC_DEFAULTS.primaryColor)
+  const accent = str(brand.accentColor, GENERIC_DEFAULTS.accentColor)
+  const primaryDark = str(brand.primaryDark as string | undefined, adjustBrightness(primary, -25))
+  const primaryLight = str(brand.primaryLight as string | undefined, adjustBrightness(primary, 35))
+  const company = str(brand.company, GENERIC_DEFAULTS.company)
 
   return {
     company,
-    tagline: brand.tagline ?? GENERIC_DEFAULTS.tagline,
-    logoText: brand.logoText ?? GENERIC_DEFAULTS.logoText,
+    tagline: str(brand.tagline, GENERIC_DEFAULTS.tagline),
+    logoText: str(brand.logoText, GENERIC_DEFAULTS.logoText),
     logoImage: brand.logoImage ?? null,
     primaryColor: primary,
     primaryDark,
     primaryLight,
     accentColor: accent,
-    navTextColor: (brand.navTextColor as string | undefined) ?? "#ffffff",
-    heroCta1TextColor: (brand.heroCta1TextColor as string | undefined) ?? "#000000",
-    accentDark: brand.accentDark ?? adjustBrightness(accent, -20),
-    heroHeading: brand.heroHeading ?? GENERIC_DEFAULTS.heroHeading,
-    heroSubheading: brand.heroSubheading ?? GENERIC_DEFAULTS.heroSubheading,
-    heroCta1Text: brand.heroCta1Text ?? "Browse Products",
-    heroCta1Url: brand.heroCta1Url ?? "products",
-    heroCta1Color: brand.heroCta1Color ?? accent,
-    heroCta2Text: brand.heroCta2Text ?? "",
-    heroCta2Url: brand.heroCta2Url ?? "",
+    navTextColor: str(brand.navTextColor as string | undefined, "#ffffff"),
+    heroCta1TextColor: str(brand.heroCta1TextColor as string | undefined, "#ffffff"),
+    accentDark: str(brand.accentDark as string | undefined, adjustBrightness(accent, -20)),
+    heroHeading: str(brand.heroHeading, GENERIC_DEFAULTS.heroHeading),
+    heroSubheading: str(brand.heroSubheading, GENERIC_DEFAULTS.heroSubheading),
+    heroCta1Text: str(brand.heroCta1Text, "Browse Products"),
+    heroCta1Url: str(brand.heroCta1Url, "products"),
+    heroCta1Color: str(brand.heroCta1Color, accent),
+    heroCta2Text: str(brand.heroCta2Text, ""),
+    heroCta2Url: str(brand.heroCta2Url, ""),
     heroBgImage: brand.heroBgImage ?? null,
     heroBgPosition: brand.heroBgPosition ?? { x: 50, y: 50 },
     heroBgZoom: brand.heroBgZoom ?? 1,
     heroBgOverlay: brand.heroBgOverlay ?? 0.5,
-    heroGradientFrom: brand.heroGradientFrom ?? primaryDark,
-    heroGradientTo: brand.heroGradientTo ?? primary,
-    trustBadge1: brand.trustBadge1 ?? GENERIC_DEFAULTS.trustBadge1,
-    trustBadge2: brand.trustBadge2 ?? GENERIC_DEFAULTS.trustBadge2,
-    trustBadge3: brand.trustBadge3 ?? GENERIC_DEFAULTS.trustBadge3,
-    trustBadge4: brand.trustBadge4 ?? GENERIC_DEFAULTS.trustBadge4,
-    catSectionHeading: brand.catSectionHeading ?? GENERIC_DEFAULTS.catSectionHeading,
-    catSectionSubheading:
-      brand.catSectionSubheading ?? GENERIC_DEFAULTS.catSectionSubheading,
-    featuredSectionHeading:
-      brand.featuredSectionHeading ?? GENERIC_DEFAULTS.featuredSectionHeading,
-    featuredSectionSubheading:
-      brand.featuredSectionSubheading ??
-      GENERIC_DEFAULTS.featuredSectionSubheadingTpl(company),
-    enterpriseHeading: brand.enterpriseHeading ?? GENERIC_DEFAULTS.enterpriseHeading,
-    enterpriseBody: brand.enterpriseBody ?? GENERIC_DEFAULTS.enterpriseBody,
-    enterpriseCtaText: brand.enterpriseCtaText ?? GENERIC_DEFAULTS.enterpriseCtaText,
-    footerTagline: brand.footerTagline ?? GENERIC_DEFAULTS.footerTagline,
-    supportEmail: brand.supportEmail ?? GENERIC_DEFAULTS.supportEmail,
+    heroGradientFrom: str(brand.heroGradientFrom, primaryDark),
+    heroGradientTo: str(brand.heroGradientTo, primary),
+    trustBadge1: str(brand.trustBadge1, GENERIC_DEFAULTS.trustBadge1),
+    trustBadge2: str(brand.trustBadge2, GENERIC_DEFAULTS.trustBadge2),
+    trustBadge3: str(brand.trustBadge3, GENERIC_DEFAULTS.trustBadge3),
+    trustBadge4: str(brand.trustBadge4, GENERIC_DEFAULTS.trustBadge4),
+    catSectionHeading: str(brand.catSectionHeading, GENERIC_DEFAULTS.catSectionHeading),
+    catSectionSubheading: str(brand.catSectionSubheading, GENERIC_DEFAULTS.catSectionSubheading),
+    featuredSectionHeading: str(brand.featuredSectionHeading, GENERIC_DEFAULTS.featuredSectionHeading),
+    featuredSectionSubheading: str(
+      brand.featuredSectionSubheading,
+      GENERIC_DEFAULTS.featuredSectionSubheadingTpl(company)
+    ),
+    enterpriseHeading: str(brand.enterpriseHeading, GENERIC_DEFAULTS.enterpriseHeading),
+    enterpriseBody: str(brand.enterpriseBody, GENERIC_DEFAULTS.enterpriseBody),
+    enterpriseCtaText: str(brand.enterpriseCtaText, GENERIC_DEFAULTS.enterpriseCtaText),
+    footerTagline: str(brand.footerTagline, GENERIC_DEFAULTS.footerTagline),
+    supportEmail: str(brand.supportEmail, GENERIC_DEFAULTS.supportEmail),
     showPricing: brand.showPricing ?? false,
     contactName: brand.contactName ?? "",
     contactEmail: brand.contactEmail ?? "",
     contactPhone: brand.contactPhone ?? "",
-    orderCtaText: brand.orderCtaText ?? "Contact to order",
+    orderCtaText: str(brand.orderCtaText, "Contact to order"),
   }
 }
 

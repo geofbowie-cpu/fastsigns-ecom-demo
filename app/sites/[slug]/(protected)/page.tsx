@@ -251,7 +251,7 @@ export default async function TenantHomePage({
                         <span className="text-xs text-gray-500">/ {p.unit}</span>
                       </div>
                     )}
-                    {tenant.status === "live" && b.contactEmail && (
+                    {tenant.status === "live" && (
                       <div
                         className="mt-3 inline-flex items-center gap-1 text-xs font-semibold"
                         style={{ color: b.primaryColor }}
