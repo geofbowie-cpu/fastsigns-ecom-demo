@@ -2,6 +2,16 @@
 
 import { useRef, useState } from "react"
 import Link from "next/link"
+import JSZip from "jszip"
+
+function slugifyClient(s: string): string {
+  return s.trim().toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+}
+
+const IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "webp", "svg"])
 
 type ImportResult = {
   ok: boolean
@@ -27,6 +37,7 @@ export default function ImportPage() {
   const [importTag, setImportTag] = useState("")
   const [mode, setMode] = useState<"add" | "replace">("add")
   const [busy, setBusy] = useState(false)
+  const [progress, setProgress] = useState<{ done: number; total: number; current: string } | null>(null)
   const [result, setResult] = useState<ImportResult | null>(null)
 
   async function submit(e: React.FormEvent) {
@@ -34,17 +45,84 @@ export default function ImportPage() {
     if (!csvFile) return
     setBusy(true)
     setResult(null)
+    setProgress(null)
+
     try {
+      // ── 1. Extract images from the ZIP in the browser and upload them one
+      //    at a time. The main import endpoint is capped at 4.5 MB so we can't
+      //    send the whole ZIP through it. Each image is small enough on its own.
+      const manifest: Record<string, string> = {}
+
+      if (zipFile) {
+        const zip = await JSZip.loadAsync(zipFile)
+        const entries = Object.values(zip.files).filter((e) => {
+          if (e.dir) return false
+          const base = e.name.split("/").pop() ?? ""
+          const dot = base.lastIndexOf(".")
+          if (dot < 0) return false
+          return IMAGE_EXTS.has(base.slice(dot + 1).toLowerCase())
+        })
+
+        setProgress({ done: 0, total: entries.length, current: "" })
+
+        for (let i = 0; i < entries.length; i++) {
+          const entry = entries[i]
+          const base = entry.name.split("/").pop() ?? entry.name
+          const dot = base.lastIndexOf(".")
+          const slug = slugifyClient(base.slice(0, dot))
+          const ext = base.slice(dot + 1).toLowerCase()
+          const mime =
+            ext === "png" ? "image/png" :
+            ext === "webp" ? "image/webp" :
+            ext === "svg" ? "image/svg+xml" :
+            "image/jpeg"
+
+          setProgress({ done: i, total: entries.length, current: slug })
+
+          const blob = await entry.async("blob")
+          const file = new File([blob], `${slug}.${ext}`, { type: mime })
+
+          const fd = new FormData()
+          fd.append("file", file)
+          fd.append("slug", slug)
+          if (importTag.trim()) fd.append("import_tag", importTag.trim())
+
+          const r = await fetch("/api/master/import/upload-image", { method: "POST", body: fd })
+          if (r.ok) {
+            const j = await r.json()
+            if (j.url) manifest[slug] = j.url
+          }
+          // If a single image fails (e.g. too big), skip it — we'll still
+          // import the row, just without an image.
+        }
+
+        setProgress({ done: entries.length, total: entries.length, current: "" })
+      }
+
+      // ── 2. Submit CSV + manifest (no ZIP) to the main import endpoint
       const fd = new FormData()
       fd.append("csv", csvFile)
-      if (zipFile) fd.append("zip", zipFile)
+      if (Object.keys(manifest).length > 0) {
+        fd.append("image_manifest", JSON.stringify(manifest))
+      }
       if (importTag.trim()) fd.append("import_tag", importTag.trim())
       fd.append("mode", mode)
 
       const res = await fetch("/api/master/import", { method: "POST", body: fd })
       const json = await res.json()
       setResult(json)
+    } catch (err: any) {
+      setResult({
+        ok: false,
+        import_tag: null,
+        products: 0,
+        images_from_zip: 0,
+        categories_created: 0,
+        mode,
+        error: err?.message ?? "Import failed",
+      })
     } finally {
+      setProgress(null)
       setBusy(false)
     }
   }
@@ -257,6 +335,25 @@ export default function ImportPage() {
                 {result.errors?.map((e, i) => <p key={i}>{e}</p>)}
               </div>
             )}
+          </div>
+        )}
+
+        {progress && (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold text-blue-900">
+                Uploading images… {progress.done} / {progress.total}
+              </span>
+              {progress.current && (
+                <span className="text-blue-700 font-mono truncate ml-3">{progress.current}</span>
+              )}
+            </div>
+            <div className="h-2 bg-white rounded-full overflow-hidden">
+              <div
+                className="h-full bg-blue-600 transition-all"
+                style={{ width: progress.total > 0 ? `${(progress.done / progress.total) * 100}%` : "0%" }}
+              />
+            </div>
           </div>
         )}
 
