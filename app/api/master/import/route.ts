@@ -22,12 +22,16 @@ import { randomBytes } from "crypto"
 // CSV column spec
 // ─────────────────────────────────────────────────────────────
 //
-// Required: slug, name, category, starting_price
-// Optional: short_desc, description, unit, icon, featured, lead_time,
-//           image_url, gradient_from, gradient_to,
-//           sizes (pipe-separated), materials (pipe-separated), tags (pipe-separated)
+// Required: slug, name, category
+// Optional: starting_price (defaults to 0), short_desc, description, unit,
+//           icon, featured, lead_time, image_url, gradient_from, gradient_to,
+//           sizes (pipe-separated), materials (pipe-separated), tags (pipe-separated),
 //           category_name, category_icon, category_description
 //           (if category_name is present, the category row is auto-created)
+//
+// Slug / category values are auto-slugified (lowercased, non-alphanumerics →
+// hyphens). ZIP image filenames are slugified the same way before matching, so
+// `Exit_ADA.jpg` in the ZIP matches a CSV slug of `exit_ADA` or `exit-ada`.
 
 const MIME_TO_EXT: Record<string, string> = {
   "image/png": "png",
@@ -93,7 +97,9 @@ export async function POST(req: Request) {
           const base = filename.split("/").pop() ?? filename
           const dotIdx = base.lastIndexOf(".")
           if (dotIdx < 0) return
-          const slug = base.slice(0, dotIdx)
+          // Slugify the filename basename so `exit_ADA.jpg`, `Exit ADA.jpg`, and
+          // `exit-ada.jpg` all match a CSV slug that resolves to `exit-ada`.
+          const slug = slugify(base.slice(0, dotIdx))
           const ext = base.slice(dotIdx + 1).toLowerCase()
           const mimeMap: Record<string, string> = {
             png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg",
@@ -131,10 +137,14 @@ export async function POST(req: Request) {
 
   rows.forEach((row, i) => {
     const lineNum = i + 2 // 1-indexed + header
-    const slug = row.slug?.trim()
+    // Slugify slug + category so the importer is forgiving about underscores,
+    // mixed case, spaces, apostrophes, etc. — the DB always stores the clean form.
+    const slug = slugify(row.slug ?? "")
     const name = row.name?.trim()
-    const category = row.category?.trim()
-    const price = row.starting_price?.trim() ? parseFloat(row.starting_price) : 0
+    const category = slugify(row.category ?? "")
+    // starting_price is optional — defaults to 0 if missing or blank.
+    const rawPrice = row.starting_price?.trim()
+    const price = rawPrice ? parseFloat(rawPrice) : 0
 
     if (!slug) { validationErrors.push(`Row ${lineNum}: missing slug`); return }
     if (!name) { validationErrors.push(`Row ${lineNum}: missing name`); return }
@@ -237,4 +247,26 @@ function buildProductRow(
     image_url: imageUrl || null,
     import_tag: importTag,
   }
+}
+
+/**
+ * Normalize any human-typed identifier into the storage slug format:
+ * lowercase, alphanumerics + hyphens only, no leading/trailing hyphens.
+ *
+ *   slugify("exit_ADA")            → "exit-ada"
+ *   slugify("BHM Water Bottle")    → "bhm-water-bottle"
+ *   slugify("indigenous_peoples'_day_drawstring")
+ *                                  → "indigenous-peoples-day-drawstring"
+ *
+ * Applied to both CSV slug/category columns AND ZIP image filenames so that
+ * mismatched casing/punctuation between the CSV and image files doesn't break
+ * the match.
+ */
+function slugify(s: string): string {
+  return s
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
 }
