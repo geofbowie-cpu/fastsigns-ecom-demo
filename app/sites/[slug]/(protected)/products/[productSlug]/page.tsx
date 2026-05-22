@@ -247,6 +247,7 @@ export default async function ProductDetailPage({
                 productName={product.name}
                 ctaText={b.quoteCtaText}
                 primaryColor={b.primaryColor}
+                allowedDomains={tenant.allowed_domains ?? []}
               />
             )}
           </div>

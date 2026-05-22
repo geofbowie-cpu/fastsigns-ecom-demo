@@ -8,12 +8,15 @@ export default function QuoteButton({
   productName,
   ctaText,
   primaryColor,
+  allowedDomains,
 }: {
   tenantSlug: string
   productSlug: string
   productName: string
   ctaText: string
   primaryColor: string
+  /** Tenant-allowed email domains, e.g. ["reddyice.com"]. Empty = no soft check. */
+  allowedDomains: string[]
 }) {
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState("")
@@ -131,6 +134,23 @@ export default function QuoteButton({
                     placeholder="you@company.com"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
+                  {(() => {
+                    // Soft warning when the typed domain isn't one of the tenant's
+                    // recognized company domains. Only fires when allowedDomains
+                    // has entries and the user has finished typing a basic email.
+                    if (allowedDomains.length === 0) return null
+                    const at = email.indexOf("@")
+                    if (at < 0 || at === email.length - 1) return null
+                    const dom = email.slice(at + 1).trim().toLowerCase()
+                    if (!dom.includes(".")) return null
+                    if (allowedDomains.includes(dom)) return null
+                    return (
+                      <p className="mt-1.5 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5 leading-tight">
+                        Heads up — <strong>{dom}</strong> isn't a recognized {allowedDomains.join(" / ")} email.
+                        You can still submit, but we may follow up to verify.
+                      </p>
+                    )
+                  })()}
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
