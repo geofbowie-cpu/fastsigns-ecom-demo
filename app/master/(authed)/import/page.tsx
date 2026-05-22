@@ -57,7 +57,12 @@ export default function ImportPage() {
         const zip = await JSZip.loadAsync(zipFile)
         const entries = Object.values(zip.files).filter((e) => {
           if (e.dir) return false
+          // Skip macOS resource-fork metadata: __MACOSX/* paths and any file
+          // basename that starts with `._`. Without this, the AppleDouble
+          // metadata wins the slug match and you get 212-byte "images".
+          if (e.name.startsWith("__MACOSX/") || e.name.includes("/__MACOSX/")) return false
           const base = e.name.split("/").pop() ?? ""
+          if (base.startsWith("._")) return false
           const dot = base.lastIndexOf(".")
           if (dot < 0) return false
           return IMAGE_EXTS.has(base.slice(dot + 1).toLowerCase())
