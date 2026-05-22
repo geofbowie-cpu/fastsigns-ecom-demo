@@ -55,6 +55,7 @@ export type TenantBrand = {
   contactEmail?: string
   contactPhone?: string
   orderCtaText?: string
+  quoteCtaText?: string
   // Procurement
   procurementSystem?: "COUPA" | "SAP Ariba" | "Oracle" | "Custom" | null
   procurementLabel?: string

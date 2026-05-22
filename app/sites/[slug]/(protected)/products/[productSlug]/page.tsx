@@ -245,7 +245,7 @@ export default async function ProductDetailPage({
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm text-white hover:opacity-90"
                 style={{ backgroundColor: b.primaryColor }}
               >
-                ✉ Get a quote →
+                ✉ {b.quoteCtaText}
               </a>
             )}
           </div>

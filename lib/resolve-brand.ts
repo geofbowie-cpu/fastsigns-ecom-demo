@@ -113,6 +113,7 @@ export function resolveBrand(brand: TenantBrand) {
     contactEmail: brand.contactEmail ?? "",
     contactPhone: brand.contactPhone ?? "",
     orderCtaText: str(brand.orderCtaText, "Contact to order"),
+    quoteCtaText: str(brand.quoteCtaText as string | undefined, "Get a quote →"),
   }
 }
 
