@@ -78,7 +78,7 @@ export default function QuoteButton({
         className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm text-white hover:opacity-90"
         style={{ backgroundColor: primaryColor }}
       >
-        ✉ {ctaText}
+        {ctaText}
       </button>
 
       {open && (

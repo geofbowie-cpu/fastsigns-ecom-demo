@@ -228,7 +228,7 @@ export default async function ProductDetailPage({
                   className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-bold text-sm text-white hover:opacity-90 transition-opacity"
                   style={{ backgroundColor: b.primaryColor }}
                 >
-                  ✉ {b.orderCtaText} — {product.name}
+                  {b.orderCtaText} — {product.name}
                 </a>
                 {b.contactPhone && (
                   <a
