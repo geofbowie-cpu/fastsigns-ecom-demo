@@ -66,6 +66,9 @@ export default function EditSiteForm({
   const [orderCtaText, setOrderCtaText] = useState(
     (tenant.brand?.orderCtaText as string) ?? "Contact to order"
   )
+  const [quoteCtaText, setQuoteCtaText] = useState(
+    (tenant.brand?.quoteCtaText as string) ?? "Get a quote →"
+  )
   // Access control
   const [allowedDomains, setAllowedDomains] = useState(
     (tenant.allowed_domains ?? []).join(", ")
@@ -163,6 +166,7 @@ export default function EditSiteForm({
         contactEmail: contactEmail.trim() || undefined,
         contactPhone: contactPhone.trim() || undefined,
         orderCtaText: orderCtaText.trim() || "Contact to order",
+        quoteCtaText: quoteCtaText.trim() || "Get a quote →",
       }
       if (logoImage.trim()) brand.logoImage = logoImage.trim()
       else delete (brand as any).logoImage
@@ -445,8 +449,11 @@ export default function EditSiteForm({
         <Field label="Contact phone">
           <input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="(555) 555-0100" className={inputCls} />
         </Field>
-        <Field label="Order CTA text">
+        <Field label="Order CTA text" hint="Live mode — product detail order button">
           <input value={orderCtaText} onChange={(e) => setOrderCtaText(e.target.value)} placeholder="Contact to order" className={inputCls} />
+        </Field>
+        <Field label="Quote CTA text" hint="Demo mode — product detail quote button">
+          <input value={quoteCtaText} onChange={(e) => setQuoteCtaText(e.target.value)} placeholder="Get a quote →" className={inputCls} />
         </Field>
         <Field label="Status">
           <div className="flex items-center gap-2">
