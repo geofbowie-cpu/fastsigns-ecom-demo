@@ -1267,7 +1267,10 @@ function ProductOverridesPanel({
                   {/* Product image — compact thumbnail + uploader */}
                   {!disabled && (
                     <ProductImageCell
-                      value={ov.imageUrl ?? ""}
+                      // Show the override if set, otherwise the product's own
+                      // image. Removing an override falls back to the product
+                      // default automatically.
+                      value={ov.imageUrl ?? p.imageUrl ?? ""}
                       onChange={(url) => onChange(p.slug, { imageUrl: url || undefined })}
                       tenantSlug={tenantSlug}
                       productImageUrl={ov.imageUrl ?? p.imageUrl ?? ""}
