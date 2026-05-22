@@ -114,7 +114,10 @@ export async function POST(req: Request) {
       await Promise.all(
         Object.entries(zip.files).map(async ([filename, entry]) => {
           if (entry.dir) return
+          // Skip macOS resource-fork metadata that ZIPs made in Finder include.
+          if (filename.startsWith("__MACOSX/") || filename.includes("/__MACOSX/")) return
           const base = filename.split("/").pop() ?? filename
+          if (base.startsWith("._")) return
           const dotIdx = base.lastIndexOf(".")
           if (dotIdx < 0) return
           // Slugify the filename basename so `exit_ADA.jpg`, `Exit ADA.jpg`, and
