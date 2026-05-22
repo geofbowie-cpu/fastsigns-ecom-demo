@@ -63,7 +63,12 @@ export async function POST(req: Request) {
   }
 
   // ── 1. Parse CSV ────────────────────────────────────────────
-  const csvText = await csvFile.text()
+  // Many shared templates put a description row (column comments) above the
+  // real header row. Detect this: if the first non-empty line doesn't contain
+  // a "slug" column but the next one does, drop the first line.
+  let csvText = await csvFile.text()
+  csvText = stripDescriptionRow(csvText)
+
   const { data: rows, errors: parseErrors } = Papa.parse<Record<string, string>>(csvText, {
     header: true,
     skipEmptyLines: true,
@@ -284,4 +289,36 @@ function slugify(s: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "")
+}
+
+/**
+ * Drop a leading description / comments row above the real header row.
+ *
+ * Pattern: row 1 = human-readable column descriptions, row 2 = actual column
+ * names (slug, name, category, …). If row 1 has no "slug" cell but row 2 does,
+ * row 1 is treated as a comment and removed.
+ */
+function stripDescriptionRow(csv: string): string {
+  // Cheap header sniff via Papa — we just want to see if row 1's parsed cells
+  // contain a "slug" entry once normalized.
+  const probe1 = Papa.parse<string[]>(csv, { skipEmptyLines: true, preview: 2 })
+  const r1 = probe1.data[0] ?? []
+  const r2 = probe1.data[1] ?? []
+  const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, "_")
+  const r1HasSlug = r1.some((c) => norm(c) === "slug")
+  const r2HasSlug = r2.some((c) => norm(c) === "slug")
+  if (!r1HasSlug && r2HasSlug) {
+    // Drop the first non-empty line from the raw CSV
+    const lines = csv.split(/\r?\n/)
+    let dropped = false
+    return lines
+      .filter((line) => {
+        if (dropped) return true
+        if (line.trim() === "") return true // keep leading blank lines (rare)
+        dropped = true
+        return false
+      })
+      .join("\n")
+  }
+  return csv
 }
