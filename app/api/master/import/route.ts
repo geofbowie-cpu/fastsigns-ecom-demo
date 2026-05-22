@@ -54,6 +54,7 @@ export async function POST(req: Request) {
 
   const csvFile = formData.get("csv") as File | null
   const zipFile = formData.get("zip") as File | null
+  const manifestRaw = formData.get("image_manifest") as string | null
   const importTag = (formData.get("import_tag") as string | null)?.trim() || null
   const mode = (formData.get("mode") as string | null) ?? "add"
 
@@ -79,9 +80,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "CSV has no data rows" }, { status: 400 })
   }
 
-  // ── 2. Extract ZIP images (if provided) ─────────────────────
-  // Map: slug → uploaded public URL
+  // ── 2. Resolve image map (manifest first, then optional ZIP) ───
+  // Map: slug → public URL
   const zipImages: Record<string, string> = {}
+
+  // Client-uploaded manifest avoids Vercel's 4.5 MB body cap. Images were
+  // already POSTed to /api/master/import/upload-image individually.
+  if (manifestRaw) {
+    try {
+      const parsed = JSON.parse(manifestRaw) as Record<string, string>
+      for (const [slug, url] of Object.entries(parsed)) {
+        if (typeof url === "string" && url) zipImages[slugify(slug)] = url
+      }
+    } catch {
+      return NextResponse.json({ error: "image_manifest must be valid JSON" }, { status: 400 })
+    }
+  }
+
   if (zipFile) {
     try {
       const zipBuf = await zipFile.arrayBuffer()
