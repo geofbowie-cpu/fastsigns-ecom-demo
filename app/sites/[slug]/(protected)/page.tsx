@@ -233,12 +233,15 @@ export default async function TenantHomePage({
                     />
                   ) : (
                     <div
-                      className="h-40 flex items-center justify-center text-5xl"
+                      className="h-40 flex items-center justify-center"
                       style={{
                         background: `linear-gradient(135deg, ${p.gradientFrom} 0%, ${p.gradientTo} 100%)`,
                       }}
                     >
-                      {p.icon}
+                      <svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 text-white/70">
+                        <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
+                        <path d="M3 16l5-5 4 4 3-3 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
                     </div>
                   )}
                   <div className="p-4">
