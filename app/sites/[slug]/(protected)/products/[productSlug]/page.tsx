@@ -136,12 +136,15 @@ export default async function ProductDetailPage({
               />
             ) : (
               <div
-                className="w-full aspect-[4/3] flex items-center justify-center text-8xl"
+                className="w-full aspect-[4/3] flex items-center justify-center"
                 style={{
                   background: `linear-gradient(135deg, ${product.gradientFrom} 0%, ${product.gradientTo} 100%)`,
                 }}
               >
-                {product.icon}
+                <svg viewBox="0 0 24 24" fill="none" className="w-20 h-20 text-white/70">
+                  <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="M3 16l5-5 4 4 3-3 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </div>
             )}
           </div>
@@ -154,7 +157,7 @@ export default async function ProductDetailPage({
                 href={`/sites/${slug}/products?category=${category.slug}`}
                 className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200"
               >
-                {category.icon} {category.name}
+                {category.name}
               </Link>
             )}
 
@@ -264,10 +267,13 @@ export default async function ProductDetailPage({
                     <img src={p.imageUrl} alt={p.name} className="h-36 w-full object-cover" />
                   ) : (
                     <div
-                      className="h-36 flex items-center justify-center text-5xl"
+                      className="h-36 flex items-center justify-center"
                       style={{ background: `linear-gradient(135deg, ${p.gradientFrom} 0%, ${p.gradientTo} 100%)` }}
                     >
-                      {p.icon}
+                      <svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 text-white/70">
+                        <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
+                        <path d="M3 16l5-5 4 4 3-3 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
                     </div>
                   )}
                   <div className="p-4">
