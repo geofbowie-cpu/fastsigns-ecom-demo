@@ -136,7 +136,7 @@ export default async function TenantProductsPage({
                     : "bg-white text-gray-700 border-gray-200 hover:border-gray-400"
                 }`}
               >
-                {c.icon} {c.name}
+                {c.name}
               </Link>
             )
           })}
