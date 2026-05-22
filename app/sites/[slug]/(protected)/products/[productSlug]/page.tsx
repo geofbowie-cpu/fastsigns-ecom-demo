@@ -6,6 +6,7 @@ import { getTenantBySlug } from "@/lib/tenant"
 import { resolveBrand } from "@/lib/resolve-brand"
 import { getProducts, getCategories } from "@/lib/products-db"
 import { isMasterAuthed } from "@/lib/master-auth"
+import QuoteButton from "./_components/QuoteButton"
 
 export default async function ProductDetailPage({
   params,
@@ -240,13 +241,13 @@ export default async function ProductDetailPage({
                 )}
               </div>
             ) : (
-              <a
-                href={mailHref}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm text-white hover:opacity-90"
-                style={{ backgroundColor: b.primaryColor }}
-              >
-                ✉ {b.quoteCtaText}
-              </a>
+              <QuoteButton
+                tenantSlug={slug}
+                productSlug={product.slug}
+                productName={product.name}
+                ctaText={b.quoteCtaText}
+                primaryColor={b.primaryColor}
+              />
             )}
           </div>
         </div>
