@@ -773,16 +773,14 @@ function CategoryManager({
                 >
                   {expanded ? "▲" : "▼"} Image
                 </button>
-                {isCustom && (
-                  <button
-                    type="button"
-                    disabled={deletingSlug === cat.slug}
-                    onClick={() => deleteCategory(cat.slug, cat.name)}
-                    className="text-[11px] px-2 py-1 rounded border border-red-100 text-red-400 hover:border-red-300 hover:text-red-600 disabled:opacity-40"
-                  >
-                    Delete
-                  </button>
-                )}
+                <button
+                  type="button"
+                  disabled={deletingSlug === cat.slug}
+                  onClick={() => deleteCategory(cat.slug, cat.name)}
+                  className="text-[11px] px-2 py-1 rounded border border-red-100 text-red-400 hover:border-red-300 hover:text-red-600 disabled:opacity-40"
+                >
+                  {deletingSlug === cat.slug ? "…" : "Delete"}
+                </button>
               </div>
             </div>
 
