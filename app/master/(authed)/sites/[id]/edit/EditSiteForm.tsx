@@ -704,6 +704,13 @@ function CategoryManager({
   }
 
   async function deleteCategory(slug: string, name: string) {
+    const productCount = allProducts.filter((p) => p.category === slug).length
+    if (productCount > 0) {
+      alert(
+        `Cannot delete "${name}" — ${productCount} product${productCount !== 1 ? "s are" : " is"} still assigned to it.\n\nDelete or move those products first.`
+      )
+      return
+    }
     if (!confirm(`Delete category "${name}"? This cannot be undone.`)) return
     setDeletingSlug(slug)
     try {
