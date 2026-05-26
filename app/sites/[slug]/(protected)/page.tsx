@@ -275,7 +275,7 @@ export default async function TenantHomePage({
                     {tenant.status === "live" && (
                       <div
                         className="mt-3 inline-flex items-center gap-1 text-xs font-semibold"
-                        style={{ color: b.primaryColor }}
+                        style={{ color: b.buttonColor }}
                       >
                         {b.orderCtaText} →
                       </div>

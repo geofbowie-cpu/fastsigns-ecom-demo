@@ -92,6 +92,8 @@ export default function EditSiteForm({
   const [categoryImages, setCategoryImages] = useState<Record<string, string>>(
     (tenant.brand?.categoryImages as Record<string, string>) ?? {}
   )
+  // Local copy of categories so we can add/remove without a page reload
+  const [localCategories, setLocalCategories] = useState(categories)
 
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -302,9 +304,8 @@ export default function EditSiteForm({
               { label: "Primary", value: primaryColor, onChange: setPrimaryColor },
               { label: "Accent", value: accentColor, onChange: setAccentColor },
               { label: "Nav text", value: navTextColor, onChange: setNavTextColor },
-              { label: "CTA text", value: heroCta1TextColor, onChange: setHeroCta1TextColor },
-              { label: "Button", value: buttonColor, onChange: setButtonColor },
-              { label: "Btn text", value: buttonTextColor, onChange: setButtonTextColor },
+              { label: "Button bg", value: buttonColor, onChange: setButtonColor },
+              { label: "Button text", value: buttonTextColor, onChange: setButtonTextColor },
             ].map(({ label, value, onChange }) => (
               <div key={label} className="flex items-center gap-1.5">
                 <span className="text-[11px] text-gray-400 w-14 shrink-0">{label}</span>
@@ -400,68 +401,32 @@ export default function EditSiteForm({
       )}
 
       <Section
-        title="Product categories"
-        hint="Leave all unchecked to show everything."
+        title="Categories"
+        hint="Toggle on/off, add card images, or create custom categories."
       >
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-1">
-          {categories.map((cat) => {
-            const on = enabled.has(cat.slug)
-            return (
-              <button
-                key={cat.slug}
-                type="button"
-                onClick={() => toggleCategory(cat.slug)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-all ${
-                  on
-                    ? "border-blue-500 bg-blue-50 text-blue-900"
-                    : "border-gray-200 hover:border-gray-300 bg-white text-gray-700"
-                }`}
-              >
-                <CategoryIcon
-                  name={cat.icon}
-                  size={14}
-                  strokeWidth={1.75}
-                  className={on ? "text-blue-600" : "text-gray-400"}
-                />
-                <span className="text-xs font-medium truncate">{cat.name}</span>
-              </button>
-            )
+        <CategoryManager
+          categories={categories}
+          enabled={enabled}
+          categoryImages={categoryImages}
+          tenantSlug={tenant.slug}
+          allProducts={allProducts}
+          onToggle={toggleCategory}
+          onImageChange={(slug, url) => setCategoryImages((prev) => {
+            const next = { ...prev }
+            if (url) next[slug] = url
+            else delete next[slug]
+            return next
           })}
-        </div>
+          onCategoryCreated={(cat) => {
+            setLocalCategories((prev) => [...prev, cat])
+            setEnabled((prev) => new Set([...Array.from(prev), cat.slug]))
+          }}
+          onCategoryDeleted={(slug) => {
+            setLocalCategories((prev) => prev.filter((c) => c.slug !== slug))
+            setEnabled((prev) => { const n = new Set(prev); n.delete(slug); return n })
+          }}
+        />
       </Section>
-
-      {/* Category card images */}
-      {categories.length > 0 && (
-        <Section
-          title="Category card images"
-          hint="Optional hero images for the category cards on the storefront homepage. Adds visual punch."
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {categories.filter((cat) => enabled.has(cat.slug) || enabled.size === 0).map((cat) => (
-              <div key={cat.slug}>
-                <div className="text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
-                  <CategoryIcon name={cat.icon} size={12} strokeWidth={1.75} className="text-gray-400" />
-                  {cat.name}
-                </div>
-                <ImageUploader
-                  value={categoryImages[cat.slug] ?? ""}
-                  onChange={(url) => setCategoryImages((prev) => {
-                    const next = { ...prev }
-                    if (url) next[cat.slug] = url
-                    else delete next[cat.slug]
-                    return next
-                  })}
-                  slug={tenant.slug}
-                  kind="category"
-                  recommendation="Recommended: 800 × 500 px, JPG or WEBP. Shown as card background."
-                  previewAspect="8/5"
-                  maxPreviewHeight={100}
-                />
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
 
       {/* Products */}
       <Section
@@ -470,7 +435,7 @@ export default function EditSiteForm({
       >
         <ProductOverridesPanel
           allProducts={allProducts}
-          allCategories={categories}
+          allCategories={localCategories}
           enabledCategories={Array.from(enabled)}
           enabledImportTags={Array.from(importTags)}
           overrides={productOverrides}
@@ -652,6 +617,299 @@ function Field({
         {hint && <span className="block text-[11px] text-gray-400 leading-tight">{hint}</span>}
       </div>
       <div>{children}</div>
+    </div>
+  )
+}
+
+// ── CategoryManager ──────────────────────────────────────────
+const CAT_ICONS = [
+  "Flag", "Layers", "Monitor", "Car", "Navigation", "Gift",
+  "Tag", "Compass", "Star", "Palette", "Package",
+]
+
+function slugify(s: string) {
+  return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
+}
+
+function CategoryManager({
+  categories,
+  enabled,
+  categoryImages,
+  tenantSlug,
+  allProducts,
+  onToggle,
+  onImageChange,
+  onCategoryCreated,
+  onCategoryDeleted,
+}: {
+  categories: BankCategory[]
+  enabled: Set<string>
+  categoryImages: Record<string, string>
+  tenantSlug: string
+  allProducts: DbProduct[]
+  onToggle: (slug: string) => void
+  onImageChange: (slug: string, url: string) => void
+  onCategoryCreated: (cat: BankCategory) => void
+  onCategoryDeleted: (slug: string) => void
+}) {
+  const [expandedSlug, setExpandedSlug] = useState<string | null>(null)
+  const [showNew, setShowNew] = useState(false)
+  const [newName, setNewName] = useState("")
+  const [newIcon, setNewIcon] = useState("Package")
+  const [newDesc, setNewDesc] = useState("")
+  const [newProductSlugs, setNewProductSlugs] = useState<Set<string>>(new Set())
+  const [newProductSearch, setNewProductSearch] = useState("")
+  const [creating, setCreating] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
+  const [deletingSlug, setDeletingSlug] = useState<string | null>(null)
+
+  const newSlug = slugify(newName)
+
+  const filteredNewProducts = allProducts.filter((p) => {
+    if (!newProductSearch.trim()) return true
+    const q = newProductSearch.toLowerCase()
+    return p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)
+  })
+
+  async function createCategory() {
+    if (!newName.trim() || !newSlug) return
+    setCreating(true)
+    setCreateError(null)
+    try {
+      const res = await fetch("/api/master/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug: newSlug,
+          name: newName.trim(),
+          icon: newIcon,
+          description: newDesc.trim(),
+          product_slugs: Array.from(newProductSlugs),
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setCreateError(json.error ?? "Failed"); return }
+      onCategoryCreated({ ...json, productSlugs: json.productSlugs ?? [] })
+      setShowNew(false)
+      setNewName("")
+      setNewIcon("Package")
+      setNewDesc("")
+      setNewProductSlugs(new Set())
+    } catch (e: any) {
+      setCreateError(e.message)
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  async function deleteCategory(slug: string, name: string) {
+    if (!confirm(`Delete category "${name}"? This cannot be undone.`)) return
+    setDeletingSlug(slug)
+    try {
+      const res = await fetch(`/api/master/categories?slug=${slug}`, { method: "DELETE" })
+      if (res.ok) onCategoryDeleted(slug)
+    } finally {
+      setDeletingSlug(null)
+    }
+  }
+
+  return (
+    <div className="space-y-1.5">
+      {categories.map((cat) => {
+        const on = enabled.has(cat.slug)
+        const expanded = expandedSlug === cat.slug
+        const imgUrl = categoryImages[cat.slug] ?? ""
+        const isCustom = (cat.productSlugs?.length ?? 0) > 0
+
+        return (
+          <div
+            key={cat.slug}
+            className={`border rounded-lg overflow-hidden transition-colors ${on ? "border-blue-200" : "border-gray-200"}`}
+          >
+            {/* Row */}
+            <div className={`flex items-center gap-2 px-3 py-2 ${on ? "bg-blue-50" : "bg-white"}`}>
+              {/* Toggle */}
+              <button
+                type="button"
+                onClick={() => onToggle(cat.slug)}
+                className={`shrink-0 w-8 h-8 rounded-md border-2 flex items-center justify-center transition-colors ${
+                  on ? "bg-blue-600 border-blue-600" : "border-gray-300 hover:border-blue-400"
+                }`}
+              >
+                {on && (
+                  <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5 text-white">
+                    <path d="M5 12l5 5L20 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </button>
+
+              {/* Thumb */}
+              {imgUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={imgUrl} alt={cat.name} className="w-8 h-8 rounded object-cover shrink-0 border border-gray-100" />
+              ) : (
+                <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${on ? "bg-blue-100" : "bg-gray-100"}`}>
+                  <CategoryIcon name={cat.icon} size={16} strokeWidth={1.5} className={on ? "text-blue-500" : "text-gray-400"} />
+                </div>
+              )}
+
+              {/* Name + badges */}
+              <div className="flex-1 min-w-0">
+                <span className={`text-sm font-semibold ${on ? "text-blue-900" : "text-gray-700"}`}>{cat.name}</span>
+                {isCustom && (
+                  <span className="ml-1.5 text-[10px] font-semibold bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">
+                    Custom · {cat.productSlugs!.length} products
+                  </span>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setExpandedSlug(expanded ? null : cat.slug)}
+                  className="text-[11px] px-2 py-1 rounded border border-gray-200 hover:border-gray-400 text-gray-500 hover:text-gray-800"
+                >
+                  {expanded ? "▲" : "▼"} Image
+                </button>
+                {isCustom && (
+                  <button
+                    type="button"
+                    disabled={deletingSlug === cat.slug}
+                    onClick={() => deleteCategory(cat.slug, cat.name)}
+                    className="text-[11px] px-2 py-1 rounded border border-red-100 text-red-400 hover:border-red-300 hover:text-red-600 disabled:opacity-40"
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Expanded image uploader */}
+            {expanded && (
+              <div className="px-3 pb-3 pt-2 border-t border-gray-100 bg-gray-50">
+                <div className="text-xs text-gray-500 mb-2">
+                  Card image — shown as full-bleed background on the homepage category card.
+                  800 × 500 px JPG or WEBP recommended.
+                </div>
+                <ImageUploader
+                  value={imgUrl}
+                  onChange={(url) => onImageChange(cat.slug, url)}
+                  slug={tenantSlug}
+                  kind="category"
+                  previewAspect="8/5"
+                  maxPreviewHeight={90}
+                />
+              </div>
+            )}
+          </div>
+        )
+      })}
+
+      {/* Create custom category */}
+      {!showNew ? (
+        <button
+          type="button"
+          onClick={() => setShowNew(true)}
+          className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-blue-600 border border-dashed border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors mt-1"
+        >
+          + Create custom category
+        </button>
+      ) : (
+        <div className="border border-blue-200 rounded-lg p-4 bg-blue-50/50 space-y-3 mt-1">
+          <div className="text-xs font-semibold text-gray-700">New custom category</div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[11px] text-gray-500 mb-0.5">Name *</label>
+              <input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Cold Storage"
+                className={inputCls}
+              />
+              {newSlug && <span className="text-[10px] text-gray-400 font-mono">/{newSlug}</span>}
+            </div>
+            <div>
+              <label className="block text-[11px] text-gray-500 mb-0.5">Icon</label>
+              <select
+                value={newIcon}
+                onChange={(e) => setNewIcon(e.target.value)}
+                className={inputCls}
+              >
+                {CAT_ICONS.map((i) => <option key={i} value={i}>{i}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[11px] text-gray-500 mb-0.5">Description</label>
+            <input
+              value={newDesc}
+              onChange={(e) => setNewDesc(e.target.value)}
+              placeholder="Signs for cold chain environments"
+              className={inputCls}
+            />
+          </div>
+
+          {/* Product picker */}
+          <div>
+            <label className="block text-[11px] text-gray-500 mb-1">
+              Products <span className="text-gray-400">(optional — picks specific products for this category)</span>
+              {newProductSlugs.size > 0 && (
+                <span className="ml-1.5 text-purple-700 font-semibold">{newProductSlugs.size} selected</span>
+              )}
+            </label>
+            <input
+              value={newProductSearch}
+              onChange={(e) => setNewProductSearch(e.target.value)}
+              placeholder="Filter products…"
+              className={`${inputCls} mb-1`}
+            />
+            <div className="max-h-40 overflow-y-auto border border-gray-200 rounded bg-white divide-y divide-gray-100">
+              {filteredNewProducts.map((p) => {
+                const sel = newProductSlugs.has(p.slug)
+                return (
+                  <label key={p.slug} className={`flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-gray-50 ${sel ? "bg-blue-50" : ""}`}>
+                    <input
+                      type="checkbox"
+                      checked={sel}
+                      onChange={() => setNewProductSlugs((prev) => {
+                        const n = new Set(prev)
+                        n.has(p.slug) ? n.delete(p.slug) : n.add(p.slug)
+                        return n
+                      })}
+                      className="rounded border-gray-300 text-blue-600"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-medium text-gray-800 truncate">{p.name}</div>
+                      <div className="text-[10px] text-gray-400 font-mono truncate">{p.category}</div>
+                    </div>
+                  </label>
+                )
+              })}
+            </div>
+          </div>
+
+          {createError && (
+            <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1">{createError}</p>
+          )}
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={createCategory}
+              disabled={creating || !newName.trim()}
+              className="bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-xs font-semibold px-3 py-1.5 rounded"
+            >
+              {creating ? "Creating…" : "Create"}
+            </button>
+            <button type="button" onClick={() => setShowNew(false)} className="text-xs text-gray-500 hover:text-gray-700">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
