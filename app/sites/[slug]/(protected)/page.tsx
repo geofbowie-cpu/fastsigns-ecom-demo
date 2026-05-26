@@ -189,21 +189,39 @@ export default async function TenantHomePage({
           <h2 className="text-2xl font-bold text-gray-900">{b.catSectionHeading}</h2>
           <p className="text-gray-500 text-sm mt-1">{b.catSectionSubheading}</p>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          {cats.map((cat) => (
-            <Link
-              key={cat.slug}
-              href={`/sites/${slug}/products?category=${cat.slug}`}
-              className="bg-white rounded-xl p-4 text-center border border-gray-100 hover:shadow-md hover:border-gray-300 transition-all group"
-            >
-              <div className="mb-2 group-hover:scale-110 transition-transform inline-flex items-center justify-center w-8 h-8 opacity-80">
-                <CategoryIcon name={cat.icon} size={28} strokeWidth={1.5} />
-              </div>
-              <div className="text-xs font-semibold text-gray-800 leading-tight">
-                {cat.name}
-              </div>
-            </Link>
-          ))}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+          {cats.map((cat) => {
+            const imgUrl = b.categoryImages[cat.slug] ?? cat.imageUrl
+            return imgUrl ? (
+              <Link
+                key={cat.slug}
+                href={`/sites/${slug}/products?category=${cat.slug}`}
+                className="relative rounded-xl overflow-hidden border border-gray-100 hover:shadow-lg hover:scale-[1.02] transition-all group aspect-[4/3]"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imgUrl} alt={cat.name} className="absolute inset-0 w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-3">
+                  <div className="text-xs font-bold text-white leading-tight drop-shadow">
+                    {cat.name}
+                  </div>
+                </div>
+              </Link>
+            ) : (
+              <Link
+                key={cat.slug}
+                href={`/sites/${slug}/products?category=${cat.slug}`}
+                className="bg-white rounded-xl p-4 text-center border border-gray-100 hover:shadow-md hover:border-gray-300 transition-all group"
+              >
+                <div className="mb-2 group-hover:scale-110 transition-transform inline-flex items-center justify-center w-8 h-8 opacity-80">
+                  <CategoryIcon name={cat.icon} size={28} strokeWidth={1.5} />
+                </div>
+                <div className="text-xs font-semibold text-gray-800 leading-tight">
+                  {cat.name}
+                </div>
+              </Link>
+            )
+          })}
         </div>
       </section>
 

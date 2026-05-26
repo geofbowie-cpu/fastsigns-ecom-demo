@@ -225,8 +225,8 @@ export default async function ProductDetailPage({
                 </div>
                 <a
                   href={mailHref}
-                  className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-bold text-sm text-white hover:opacity-90 transition-opacity"
-                  style={{ backgroundColor: b.primaryColor }}
+                  className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-bold text-sm hover:opacity-90 transition-opacity"
+                  style={{ backgroundColor: b.buttonColor, color: b.buttonTextColor }}
                 >
                   {b.orderCtaText} — {product.name}
                 </a>
@@ -234,7 +234,7 @@ export default async function ProductDetailPage({
                   <a
                     href={`tel:${b.contactPhone}`}
                     className="flex items-center justify-center gap-2 w-full py-3 rounded-xl font-semibold text-sm border-2 text-gray-700 hover:bg-gray-50"
-                    style={{ borderColor: b.primaryColor }}
+                    style={{ borderColor: b.buttonColor }}
                   >
                     📞 {b.contactPhone}
                   </a>
@@ -246,7 +246,8 @@ export default async function ProductDetailPage({
                 productSlug={product.slug}
                 productName={product.name}
                 ctaText={b.quoteCtaText}
-                primaryColor={b.primaryColor}
+                buttonColor={b.buttonColor}
+                buttonTextColor={b.buttonTextColor}
                 allowedDomains={tenant.allowed_domains ?? []}
               />
             )}

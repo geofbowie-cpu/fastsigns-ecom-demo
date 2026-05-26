@@ -39,8 +39,17 @@ export default async function TenantProductsPage({
 
   // Filter by category and/or search query
   const query = q?.trim().toLowerCase() ?? ""
+  const activeCat = category ? cats.find((c) => c.slug === category) : null
   const filtered = all.filter((p) => {
-    const matchCat = category ? p.category === category : true
+    let matchCat = true
+    if (activeCat) {
+      // Custom categories with explicit product slugs: match by slug list
+      if (activeCat.productSlugs && activeCat.productSlugs.length > 0) {
+        matchCat = activeCat.productSlugs.includes(p.slug)
+      } else {
+        matchCat = p.category === category
+      }
+    }
     const matchQ = query
       ? p.name.toLowerCase().includes(query) ||
         p.shortDesc.toLowerCase().includes(query) ||

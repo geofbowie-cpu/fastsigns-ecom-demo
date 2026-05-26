@@ -212,6 +212,33 @@ export async function upsertCategories(
     .upsert(rows, { onConflict: "slug", ignoreDuplicates: false })
 }
 
+export type CategoryUpsertRow = {
+  slug: string
+  name: string
+  icon?: string
+  description?: string
+  image_url?: string | null
+  product_slugs?: string[]
+}
+
+export async function upsertCategory(row: CategoryUpsertRow): Promise<BankCategory> {
+  const { data, error } = await adminClient()
+    .from("categories")
+    .upsert(row, { onConflict: "slug" })
+    .select()
+    .single()
+  if (error) throw new Error(error.message)
+  return dbRowToCategory(data)
+}
+
+export async function deleteCategory(slug: string): Promise<void> {
+  const { error } = await adminClient()
+    .from("categories")
+    .delete()
+    .eq("slug", slug)
+  if (error) throw new Error(error.message)
+}
+
 // ─────────────────────────────────────────────────────────────
 // Row mappers
 // ─────────────────────────────────────────────────────────────
@@ -243,5 +270,7 @@ function dbRowToCategory(r: any): BankCategory {
     name: r.name,
     icon: r.icon ?? "📦",
     description: r.description ?? "",
+    imageUrl: r.image_url ?? undefined,
+    productSlugs: r.product_slugs ?? [],
   }
 }

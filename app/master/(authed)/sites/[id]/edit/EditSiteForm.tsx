@@ -83,6 +83,15 @@ export default function EditSiteForm({
   const [heroCta1TextColor, setHeroCta1TextColor] = useState(
     (tenant.brand?.heroCta1TextColor as string) ?? "#000000"
   )
+  const [buttonColor, setButtonColor] = useState(
+    (tenant.brand?.buttonColor as string) ?? primaryColor
+  )
+  const [buttonTextColor, setButtonTextColor] = useState(
+    (tenant.brand?.buttonTextColor as string) ?? "#ffffff"
+  )
+  const [categoryImages, setCategoryImages] = useState<Record<string, string>>(
+    (tenant.brand?.categoryImages as Record<string, string>) ?? {}
+  )
 
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -161,12 +170,15 @@ export default function EditSiteForm({
         accentColor,
         navTextColor,
         heroCta1TextColor,
+        buttonColor,
+        buttonTextColor,
         showPricing,
         contactName: contactName.trim() || undefined,
         contactEmail: contactEmail.trim() || undefined,
         contactPhone: contactPhone.trim() || undefined,
         orderCtaText: orderCtaText.trim() || "Contact to order",
         quoteCtaText: quoteCtaText.trim() || "Get a quote →",
+        categoryImages: Object.keys(categoryImages).length > 0 ? categoryImages : undefined,
       }
       if (logoImage.trim()) brand.logoImage = logoImage.trim()
       else delete (brand as any).logoImage
@@ -291,6 +303,8 @@ export default function EditSiteForm({
               { label: "Accent", value: accentColor, onChange: setAccentColor },
               { label: "Nav text", value: navTextColor, onChange: setNavTextColor },
               { label: "CTA text", value: heroCta1TextColor, onChange: setHeroCta1TextColor },
+              { label: "Button", value: buttonColor, onChange: setButtonColor },
+              { label: "Btn text", value: buttonTextColor, onChange: setButtonTextColor },
             ].map(({ label, value, onChange }) => (
               <div key={label} className="flex items-center gap-1.5">
                 <span className="text-[11px] text-gray-400 w-14 shrink-0">{label}</span>
@@ -415,6 +429,39 @@ export default function EditSiteForm({
           })}
         </div>
       </Section>
+
+      {/* Category card images */}
+      {categories.length > 0 && (
+        <Section
+          title="Category card images"
+          hint="Optional hero images for the category cards on the storefront homepage. Adds visual punch."
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {categories.filter((cat) => enabled.has(cat.slug) || enabled.size === 0).map((cat) => (
+              <div key={cat.slug}>
+                <div className="text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
+                  <CategoryIcon name={cat.icon} size={12} strokeWidth={1.75} className="text-gray-400" />
+                  {cat.name}
+                </div>
+                <ImageUploader
+                  value={categoryImages[cat.slug] ?? ""}
+                  onChange={(url) => setCategoryImages((prev) => {
+                    const next = { ...prev }
+                    if (url) next[cat.slug] = url
+                    else delete next[cat.slug]
+                    return next
+                  })}
+                  slug={tenant.slug}
+                  kind="category"
+                  recommendation="Recommended: 800 × 500 px, JPG or WEBP. Shown as card background."
+                  previewAspect="8/5"
+                  maxPreviewHeight={100}
+                />
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
 
       {/* Products */}
       <Section

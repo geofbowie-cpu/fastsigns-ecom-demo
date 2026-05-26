@@ -9,8 +9,8 @@ type Props = {
   onChange: (url: string) => void
   /** Tenant slug — folders the upload by tenant */
   slug?: string
-  /** "hero" | "logo" — used in storage key + recommendation copy */
-  kind?: "hero" | "logo"
+  /** "hero" | "logo" | "category" — used in storage key + recommendation copy */
+  kind?: "hero" | "logo" | "category"
   /** Hint copy shown inside the dropzone */
   recommendation?: string
   /** Aspect ratio for the preview box (default 21:9 for hero) */

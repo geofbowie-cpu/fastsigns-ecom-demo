@@ -23,10 +23,16 @@ export default async function AuthedLayout({
           </Link>
           <div className="flex items-center gap-4">
             <Link
+              href="/master/categories"
+              className="text-gray-300 hover:text-white text-xs font-medium"
+            >
+              Categories
+            </Link>
+            <Link
               href="/master/import"
               className="text-gray-300 hover:text-white text-xs font-medium"
             >
-              Import products
+              Import
             </Link>
             <Link
               href="/master/users"

@@ -56,6 +56,11 @@ export type TenantBrand = {
   contactPhone?: string
   orderCtaText?: string
   quoteCtaText?: string
+  // Button styling
+  buttonColor?: string
+  buttonTextColor?: string
+  // Per-tenant category card images (slug → url)
+  categoryImages?: Record<string, string>
   // Procurement
   procurementSystem?: "COUPA" | "SAP Ariba" | "Oracle" | "Custom" | null
   procurementLabel?: string

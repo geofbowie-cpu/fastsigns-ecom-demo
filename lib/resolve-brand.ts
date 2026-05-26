@@ -114,6 +114,9 @@ export function resolveBrand(brand: TenantBrand) {
     contactPhone: brand.contactPhone ?? "",
     orderCtaText: str(brand.orderCtaText, "Contact to order"),
     quoteCtaText: str(brand.quoteCtaText as string | undefined, "Get a quote →"),
+    buttonColor: str(brand.buttonColor as string | undefined, primary),
+    buttonTextColor: str(brand.buttonTextColor as string | undefined, "#ffffff"),
+    categoryImages: (brand.categoryImages as Record<string, string> | undefined) ?? {},
   }
 }
 

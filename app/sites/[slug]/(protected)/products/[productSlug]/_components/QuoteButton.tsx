@@ -7,14 +7,16 @@ export default function QuoteButton({
   productSlug,
   productName,
   ctaText,
-  primaryColor,
+  buttonColor,
+  buttonTextColor,
   allowedDomains,
 }: {
   tenantSlug: string
   productSlug: string
   productName: string
   ctaText: string
-  primaryColor: string
+  buttonColor: string
+  buttonTextColor: string
   /** Tenant-allowed email domains, e.g. ["reddyice.com"]. Empty = no soft check. */
   allowedDomains: string[]
 }) {
@@ -75,8 +77,8 @@ export default function QuoteButton({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm text-white hover:opacity-90"
-        style={{ backgroundColor: primaryColor }}
+        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm hover:opacity-90"
+        style={{ backgroundColor: buttonColor, color: buttonTextColor }}
       >
         {ctaText}
       </button>
@@ -193,8 +195,8 @@ export default function QuoteButton({
                   <button
                     type="submit"
                     disabled={busy || !email.trim()}
-                    className="flex-1 py-2.5 rounded-lg text-sm font-bold text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
-                    style={{ backgroundColor: primaryColor }}
+                    className="flex-1 py-2.5 rounded-lg text-sm font-bold disabled:opacity-50 hover:opacity-90 transition-opacity"
+                    style={{ backgroundColor: buttonColor, color: buttonTextColor }}
                   >
                     {busy ? "Sending…" : "Send request"}
                   </button>

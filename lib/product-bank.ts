@@ -36,6 +36,11 @@ export type BankCategory = {
   name: string
   icon: string
   description: string
+  imageUrl?: string
+  /** Explicit product slugs — if non-empty, the category shows these products
+   *  regardless of the products' own category field. Used for custom / curated
+   *  categories like "Cold Storage" or seasonal collections. */
+  productSlugs?: string[]
 }
 
 export const bankCategories: BankCategory[] = [
