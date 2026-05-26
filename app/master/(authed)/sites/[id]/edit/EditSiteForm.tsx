@@ -89,6 +89,10 @@ export default function EditSiteForm({
   const [buttonTextColor, setButtonTextColor] = useState(
     (tenant.brand?.buttonTextColor as string) ?? "#ffffff"
   )
+  const [trustBadge1, setTrustBadge1] = useState((tenant.brand?.trustBadge1 as string) ?? "")
+  const [trustBadge2, setTrustBadge2] = useState((tenant.brand?.trustBadge2 as string) ?? "")
+  const [trustBadge3, setTrustBadge3] = useState((tenant.brand?.trustBadge3 as string) ?? "")
+  const [trustBadge4, setTrustBadge4] = useState((tenant.brand?.trustBadge4 as string) ?? "")
   const [categoryImages, setCategoryImages] = useState<Record<string, string>>(
     (tenant.brand?.categoryImages as Record<string, string>) ?? {}
   )
@@ -182,6 +186,10 @@ export default function EditSiteForm({
         orderCtaText: orderCtaText.trim() || "Contact to order",
         quoteCtaText: quoteCtaText.trim() || "Get a quote →",
         categoryImages: Object.keys(categoryImages).length > 0 ? categoryImages : undefined,
+        trustBadge1: trustBadge1.trim(),
+        trustBadge2: trustBadge2.trim(),
+        trustBadge3: trustBadge3.trim(),
+        trustBadge4: trustBadge4.trim(),
       }
       if (logoImage.trim()) brand.logoImage = logoImage.trim()
       else delete (brand as any).logoImage
@@ -347,6 +355,29 @@ export default function EditSiteForm({
             slug={tenant.slug} kind="hero"
             previewAspect="21/9" maxPreviewHeight={110}
           />
+        </Field>
+        <Field label="Trust badges" hint="✓ items below hero text — leave blank to hide">
+          <div className="space-y-1.5">
+            {[
+              { value: trustBadge1, onChange: setTrustBadge1, placeholder: "Fortune 500 Trusted" },
+              { value: trustBadge2, onChange: setTrustBadge2, placeholder: "2-Year Warranty" },
+              { value: trustBadge3, onChange: setTrustBadge3, placeholder: "Nationwide Installation" },
+              { value: trustBadge4, onChange: setTrustBadge4, placeholder: "Net 30 / PO Accepted" },
+            ].map(({ value, onChange, placeholder }, i) => (
+              <div key={i} className="flex items-center gap-1.5">
+                <span className="text-green-500 text-xs w-4 shrink-0">✓</span>
+                <input
+                  value={value}
+                  onChange={(e) => onChange(e.target.value)}
+                  placeholder={placeholder}
+                  className={inputCls}
+                />
+                {value && (
+                  <button type="button" onClick={() => onChange("")} className="text-gray-300 hover:text-gray-500 text-sm shrink-0">✕</button>
+                )}
+              </div>
+            ))}
+          </div>
         </Field>
       </Section>
 
