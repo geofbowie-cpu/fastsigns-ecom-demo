@@ -8,6 +8,10 @@ import { resolveBrand } from "@/lib/resolve-brand"
 import { getProducts, getCategories } from "@/lib/products-db"
 import { isMasterAuthed } from "@/lib/master-auth"
 import SearchInput from "./SearchInput"
+import CategoryIcon from "@/components/CategoryIcon"
+import type { ResolvedBrand } from "@/lib/resolve-brand"
+import type { Tenant } from "@/lib/tenant"
+import type { BankProduct } from "@/lib/product-bank"
 
 export default async function TenantProductsPage({
   params,
@@ -160,56 +164,115 @@ export default async function TenantProductsPage({
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {filtered.map((p) => (
-            <Link
-              key={p.slug}
-              href={`/sites/${slug}/products/${p.slug}`}
-              className="group bg-white border border-gray-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow"
-            >
-              {p.imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={p.imageUrl}
-                  alt={p.name}
-                  className="h-36 w-full object-cover group-hover:scale-[1.02] transition-transform"
-                />
-              ) : (
-                <div
-                  className="h-36 flex items-center justify-center"
-                  style={{
-                    background: `linear-gradient(135deg, ${p.gradientFrom} 0%, ${p.gradientTo} 100%)`,
-                  }}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 text-white/70">
-                    <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
-                    <path d="M3 16l5-5 4 4 3-3 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+        {/* When a category is selected: flat grid */}
+        {category && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {filtered.map((p) => (
+              <ProductCard key={p.slug} p={p} slug={slug} b={b} tenant={tenant} />
+            ))}
+          </div>
+        )}
+
+        {/* When no category selected: grouped by category */}
+        {!category && filtered.length > 0 && (() => {
+          const sections = cats
+            .map((cat) => {
+              const products = all.filter((p) => {
+                const matchCat =
+                  cat.productSlugs && cat.productSlugs.length > 0
+                    ? cat.productSlugs.includes(p.slug)
+                    : p.category === cat.slug
+                const matchQ = query
+                  ? p.name.toLowerCase().includes(query) ||
+                    p.shortDesc.toLowerCase().includes(query) ||
+                    (p.description?.toLowerCase().includes(query) ?? false)
+                  : true
+                return matchCat && matchQ
+              })
+              return { cat, products }
+            })
+            .filter(({ products }) => products.length > 0)
+
+          return (
+            <div className="space-y-10">
+              {sections.map(({ cat, products }, i) => (
+                <div key={cat.slug}>
+                  {i > 0 && <hr className="border-gray-200 mb-10" />}
+                  <div className="flex items-center gap-2 mb-5">
+                    <CategoryIcon name={cat.icon} size={20} strokeWidth={1.75} className="text-gray-500" />
+                    <h2 className="text-xl font-black text-gray-900">{cat.name}</h2>
+                    <span className="text-sm text-gray-400 font-normal">({products.length})</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                    {products.map((p) => (
+                      <ProductCard key={p.slug} p={p} slug={slug} b={b} tenant={tenant} />
+                    ))}
+                  </div>
                 </div>
-              )}
-              <div className="p-4">
-                <h3 className="font-bold text-gray-900 text-sm group-hover:underline">{p.name}</h3>
-                <p className="text-xs text-gray-500 mt-1 line-clamp-2">{p.shortDesc}</p>
-                {b.showPricing && tenant.status !== "live" && (
-                  <div className="mt-3 flex items-baseline gap-1">
-                    <span className="text-xs text-gray-500">from</span>
-                    <span className="font-bold text-gray-900">${p.startingPrice}</span>
-                    <span className="text-xs text-gray-500">/ {p.unit}</span>
-                  </div>
-                )}
-                {tenant.status === "live" && (
-                  <div
-                    className="mt-3 inline-flex items-center gap-1 text-xs font-semibold"
-                    style={{ color: b.primaryColor }}
-                  >
-                    {b.orderCtaText} →
-                  </div>
-                )}
-              </div>
-            </Link>
-          ))}
-        </div>
+              ))}
+            </div>
+          )
+        })()}
       </div>
     </div>
+  )
+}
+
+function ProductCard({
+  p,
+  slug,
+  b,
+  tenant,
+}: {
+  p: BankProduct
+  slug: string
+  b: ResolvedBrand
+  tenant: Tenant
+}) {
+  return (
+    <Link
+      href={`/sites/${slug}/products/${p.slug}`}
+      className="group bg-white border border-gray-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow"
+    >
+      {p.imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={p.imageUrl}
+          alt={p.name}
+          className="h-36 w-full object-cover group-hover:scale-[1.02] transition-transform"
+        />
+      ) : (
+        <div
+          className="h-36 flex items-center justify-center"
+          style={{
+            background: `linear-gradient(135deg, ${p.gradientFrom} 0%, ${p.gradientTo} 100%)`,
+          }}
+        >
+          <svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 text-white/70">
+            <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
+            <path d="M3 16l5-5 4 4 3-3 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+      )}
+      <div className="p-4">
+        <h3 className="font-bold text-gray-900 text-sm group-hover:underline">{p.name}</h3>
+        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{p.shortDesc}</p>
+        {b.showPricing && tenant.status !== "live" && (
+          <div className="mt-3 flex items-baseline gap-1">
+            <span className="text-xs text-gray-500">from</span>
+            <span className="font-bold text-gray-900">${p.startingPrice}</span>
+            <span className="text-xs text-gray-500">/ {p.unit}</span>
+          </div>
+        )}
+        {tenant.status === "live" && (
+          <div
+            className="mt-3 inline-flex items-center gap-1 text-xs font-semibold"
+            style={{ color: b.primaryColor }}
+          >
+            {b.orderCtaText} →
+          </div>
+        )}
+      </div>
+    </Link>
   )
 }
