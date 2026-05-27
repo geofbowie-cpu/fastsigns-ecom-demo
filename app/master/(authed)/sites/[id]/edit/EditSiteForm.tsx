@@ -108,6 +108,12 @@ export default function EditSiteForm({
   // Local copy of categories so we can add/remove without a page reload
   const [localCategories, setLocalCategories] = useState(categories)
 
+  // Site-specific products (import_tag = "site-{tenant.slug}")
+  const siteImportTag = `site-${tenant.slug}`
+  const [siteProducts, setSiteProducts] = useState<DbProduct[]>(
+    allProducts.filter((p) => p.import_tag === siteImportTag)
+  )
+
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -532,6 +538,25 @@ export default function EditSiteForm({
           onCategoryDeleted={(slug) => {
             setLocalCategories((prev) => prev.filter((c) => c.slug !== slug))
             setEnabled((prev) => { const n = new Set(prev); n.delete(slug); return n })
+          }}
+        />
+      </Section>
+
+      {/* Custom products */}
+      <Section
+        title="Custom products"
+        hint={`Site-specific products tagged "${siteImportTag}" — visible only on this site.`}
+      >
+        <SiteProductsManager
+          siteImportTag={siteImportTag}
+          categories={localCategories}
+          siteProducts={siteProducts}
+          onProductCreated={(p) => {
+            setSiteProducts((prev) => [...prev, p])
+            setImportTags((prev) => new Set([...Array.from(prev), siteImportTag]))
+          }}
+          onProductDeleted={(slug) => {
+            setSiteProducts((prev) => prev.filter((p) => p.slug !== slug))
           }}
         />
       </Section>
@@ -1042,6 +1067,222 @@ function CategoryManager({
             </button>
           </div>
         </div>
+      )}
+    </div>
+  )
+}
+
+// ── Site-specific product manager ────────────────────────────
+
+function SiteProductsManager({
+  siteImportTag,
+  categories,
+  siteProducts,
+  onProductCreated,
+  onProductDeleted,
+}: {
+  siteImportTag: string
+  categories: BankCategory[]
+  siteProducts: DbProduct[]
+  onProductCreated: (p: DbProduct) => void
+  onProductDeleted: (slug: string) => void
+}) {
+  const [showForm, setShowForm] = useState(false)
+  const [name, setName] = useState("")
+  const [category, setCategory] = useState(categories[0]?.slug ?? "")
+  const [shortDesc, setShortDesc] = useState("")
+  const [price, setPrice] = useState("")
+  const [unit, setUnit] = useState("")
+  const [imageUrl, setImageUrl] = useState("")
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [deletingSlug, setDeletingSlug] = useState<string | null>(null)
+
+  function derivedSlug() {
+    return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
+  }
+
+  async function create() {
+    if (!name.trim()) return
+    setBusy(true)
+    setError(null)
+    try {
+      const res = await fetch("/api/master/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug: derivedSlug() || undefined,
+          name: name.trim(),
+          category,
+          short_desc: shortDesc.trim() || undefined,
+          starting_price: price !== "" ? parseFloat(price) : undefined,
+          unit: unit.trim() || undefined,
+          image_url: imageUrl.trim() || null,
+          import_tag: siteImportTag,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setError(json.error ?? "Failed"); return }
+      onProductCreated(json as DbProduct)
+      // Reset form
+      setName("")
+      setShortDesc("")
+      setPrice("")
+      setUnit("")
+      setImageUrl("")
+      setShowForm(false)
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function deleteProduct(slug: string, productName: string) {
+    if (!confirm(`Delete "${productName}"? This cannot be undone.`)) return
+    setDeletingSlug(slug)
+    try {
+      const res = await fetch(`/api/master/products?slug=${slug}`, { method: "DELETE" })
+      if (res.ok) {
+        onProductDeleted(slug)
+      } else {
+        const j = await res.json().catch(() => ({}))
+        alert(j.error ?? "Delete failed")
+      }
+    } finally {
+      setDeletingSlug(null)
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      {/* Existing site-specific products */}
+      {siteProducts.length > 0 && (
+        <div className="space-y-1">
+          {siteProducts.map((p) => (
+            <div key={p.slug} className="flex items-center gap-2 py-1.5 px-3 bg-white border border-gray-100 rounded-lg">
+              <div className="flex-1 min-w-0">
+                <span className="text-sm font-semibold text-gray-800">{p.name}</span>
+                <span className="ml-2 text-[10px] font-mono text-gray-400">{p.slug}</span>
+                {p.startingPrice > 0 && (
+                  <span className="ml-2 text-xs text-gray-500">${p.startingPrice}</span>
+                )}
+              </div>
+              <button
+                type="button"
+                disabled={deletingSlug === p.slug}
+                onClick={() => deleteProduct(p.slug, p.name)}
+                className="text-[11px] px-2 py-1 rounded border border-red-100 text-red-400 hover:border-red-300 hover:text-red-600 disabled:opacity-40 transition-colors shrink-0"
+              >
+                {deletingSlug === p.slug ? "…" : "Delete"}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {siteProducts.length === 0 && !showForm && (
+        <p className="text-xs text-gray-400 italic">No custom products yet for this site.</p>
+      )}
+
+      {/* Add product form */}
+      {showForm ? (
+        <div className="border border-blue-200 rounded-lg p-4 bg-blue-50/50 space-y-3">
+          <div className="text-xs font-semibold text-gray-700">New custom product</div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[11px] text-gray-500 mb-0.5">Name *</label>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Custom Banner"
+                className={inputCls}
+              />
+              {name && <span className="text-[10px] text-gray-400 font-mono">{derivedSlug()}</span>}
+            </div>
+            <div>
+              <label className="block text-[11px] text-gray-500 mb-0.5">Category *</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className={inputCls}
+              >
+                {categories.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[11px] text-gray-500 mb-0.5">Short description</label>
+            <input
+              value={shortDesc}
+              onChange={(e) => setShortDesc(e.target.value)}
+              placeholder="One-line summary"
+              className={inputCls}
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="block text-[11px] text-gray-500 mb-0.5">Price ($)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="0.00"
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] text-gray-500 mb-0.5">Unit</label>
+              <input
+                value={unit}
+                onChange={(e) => setUnit(e.target.value)}
+                placeholder="per unit"
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] text-gray-500 mb-0.5">Image URL</label>
+              <input
+                type="url"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https://…"
+                className={inputCls}
+              />
+            </div>
+          </div>
+
+          {error && (
+            <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1">{error}</p>
+          )}
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={create}
+              disabled={busy || !name.trim()}
+              className="bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-xs font-semibold px-3 py-1.5 rounded"
+            >
+              {busy ? "Creating…" : "Create"}
+            </button>
+            <button type="button" onClick={() => setShowForm(false)} className="text-xs text-gray-500 hover:text-gray-700">
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setShowForm(true)}
+          className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-blue-600 border border-dashed border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors"
+        >
+          + Add custom product
+        </button>
       )}
     </div>
   )

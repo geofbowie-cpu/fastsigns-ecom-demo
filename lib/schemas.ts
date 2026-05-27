@@ -43,6 +43,22 @@ export const QuoteRequestSchema = z.object({
   comments: z.string().max(2000).optional(),
 })
 
+// ── Products ─────────────────────────────────────────────────
+export const ProductUpsertSchema = z.object({
+  slug: z.string().regex(/^[a-z0-9-]+$/, "slug must be lowercase alphanumeric + hyphens").optional(),
+  name: z.string().min(1).max(200),
+  category: z.string().min(1),
+  short_desc: z.string().max(500).optional(),
+  description: z.string().max(5000).optional(),
+  starting_price: z.number().min(0).optional(),
+  unit: z.string().max(50).optional(),
+  icon: z.string().max(50).optional(),
+  featured: z.boolean().optional(),
+  image_url: z.string().url().nullable().optional(),
+  import_tag: z.string().nullable().optional(),
+  lead_time: z.string().max(100).optional(),
+})
+
 // ── Users ────────────────────────────────────────────────────
 export const UserEmailSchema = z.object({
   email: z.string().email(),

@@ -204,6 +204,27 @@ export async function upsertProducts(rows: ProductUpsertRow[]): Promise<{
   return { inserted: data?.length ?? 0, updated: 0 }
 }
 
+export async function deleteProduct(slug: string): Promise<void> {
+  const { error } = await adminClient().from("products").delete().eq("slug", slug)
+  if (error) throw new Error(error.message)
+}
+
+export async function upsertProduct(row: ProductUpsertRow): Promise<DbProduct> {
+  const { data, error } = await adminClient()
+    .from("products")
+    .upsert(row, { onConflict: "slug" })
+    .select()
+    .single()
+  if (error) throw new Error(error.message)
+  return { ...dbRowToProduct(data), import_tag: data.import_tag ?? null }
+}
+
+export async function getProductBySlug(slug: string): Promise<DbProduct | null> {
+  const { data } = await adminClient().from("products").select("*").eq("slug", slug).maybeSingle()
+  if (!data) return null
+  return { ...dbRowToProduct(data), import_tag: data.import_tag ?? null }
+}
+
 export async function upsertCategories(
   rows: { slug: string; name: string; icon?: string; description?: string }[]
 ): Promise<void> {
