@@ -73,6 +73,7 @@ export default function EditSiteForm({
   const [allowedDomains, setAllowedDomains] = useState(
     (tenant.allowed_domains ?? []).join(", ")
   )
+  const [requireLogin, setRequireLogin] = useState(tenant.require_login ?? false)
   // Delete confirmation
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteSlugInput, setDeleteSlugInput] = useState("")
@@ -227,6 +228,7 @@ export default function EditSiteForm({
           import_tags: Array.from(importTags),
           product_overrides: productOverrides,
           admin_email: adminEmail || null,
+          require_login: requireLogin,
           allowed_domains: allowedDomains
             .split(",")
             .map((d) => d.trim().toLowerCase().replace(/^@/, ""))
@@ -597,16 +599,36 @@ export default function EditSiteForm({
       {/* Access control */}
       <Section
         title="Access control"
-        hint="Blank = public. Add domains to gate with magic-link login."
+        hint="When login is required, only visitors from allowed domains can enter."
       >
-        <Field label="Allowed domains" hint="comma-separated, e.g. nike.com">
-          <input
-            value={allowedDomains}
-            onChange={(e) => setAllowedDomains(e.target.value)}
-            placeholder="nike.com, nikegroup.com"
-            className={inputCls}
-          />
+        <Field label="Require login">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={requireLogin}
+              onClick={() => setRequireLogin((v) => !v)}
+              className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
+                requireLogin ? "bg-blue-600" : "bg-gray-300"
+              }`}
+            >
+              <span className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${requireLogin ? "translate-x-4" : "translate-x-0"}`} />
+            </button>
+            <span className="text-xs text-gray-500">
+              {requireLogin ? "On — visitors must authenticate" : "Off — anyone can browse"}
+            </span>
+          </div>
         </Field>
+        {requireLogin && (
+          <Field label="Allowed domains" hint="comma-separated, e.g. nike.com — blank = any email">
+            <input
+              value={allowedDomains}
+              onChange={(e) => setAllowedDomains(e.target.value)}
+              placeholder="nike.com, nikegroup.com"
+              className={inputCls}
+            />
+          </Field>
+        )}
       </Section>
 
       {/* Danger zone */}

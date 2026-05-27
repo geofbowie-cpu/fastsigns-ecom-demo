@@ -82,6 +82,7 @@ export type Tenant = {
   admin_email: string | null
   archived: boolean
   allowed_domains: string[]
+  require_login: boolean
   created_at: string
   updated_at: string
 }
@@ -92,6 +93,7 @@ export type TenantInput = {
   brand?: TenantBrand
   enabled_categories?: string[]
   admin_email?: string | null
+  require_login?: boolean
 }
 
 // ─────────────────────────────────────────────────────────────

@@ -19,36 +19,34 @@ export default async function ProtectedSiteLayout({
   // No tenant = let the page handle notFound
   if (!tenant) return <>{children}</>
 
-  // No domain restriction = public
-  const domains = tenant.allowed_domains ?? []
-  if (domains.length === 0) return (
+  const wrap = (
     <>
       {children}
       {isDemo && <DemoBanner />}
     </>
   )
+
+  // Gating disabled (default) — anyone can browse
+  if (!tenant.require_login) return wrap
 
   // Master admins can always preview any site
-  if (await isMasterAuthed()) return (
-    <>
-      {children}
-      {isDemo && <DemoBanner />}
-    </>
-  )
+  if (await isMasterAuthed()) return wrap
 
   // Check tenant session cookie
+  const domains = tenant.allowed_domains ?? []
   const store = await cookies()
   const raw = store.get(cookieName(slug))?.value
   const email = getTenantSession(slug, raw)
 
   if (!email) redirect(`/${slug}/login`)
 
-  return (
-    <>
-      {children}
-      {isDemo && <DemoBanner />}
-    </>
-  )
+  // If the user's email domain isn't in the allowlist, reject
+  if (domains.length > 0) {
+    const userDomain = email.split("@")[1]?.toLowerCase()
+    if (!domains.includes(userDomain)) redirect(`/${slug}/login`)
+  }
+
+  return wrap
 }
 
 function DemoBanner() {
