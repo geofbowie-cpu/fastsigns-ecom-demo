@@ -95,6 +95,8 @@ export default function EditSiteForm({
   const [heroCta2Url, setHeroCta2Url] = useState((tenant.brand?.heroCta2Url as string) ?? "")
   const [heroCta2Color, setHeroCta2Color] = useState((tenant.brand?.heroCta2Color as string) ?? "#ffffff")
   const [heroCta2TextColor, setHeroCta2TextColor] = useState((tenant.brand?.heroCta2TextColor as string) ?? "#1e3a5f")
+  const [footerTagline, setFooterTagline] = useState((tenant.brand?.footerTagline as string) ?? "")
+  const [supportEmail, setSupportEmail] = useState((tenant.brand?.supportEmail as string) ?? "")
   const [trustBadge1, setTrustBadge1] = useState((tenant.brand?.trustBadge1 as string) ?? "")
   const [trustBadge2, setTrustBadge2] = useState((tenant.brand?.trustBadge2 as string) ?? "")
   const [trustBadge3, setTrustBadge3] = useState((tenant.brand?.trustBadge3 as string) ?? "")
@@ -198,6 +200,8 @@ export default function EditSiteForm({
         heroCta2Url: heroCta2Url.trim() || "products",
         heroCta2Color: heroCta2Color,
         heroCta2TextColor: heroCta2TextColor,
+        footerTagline: footerTagline.trim() || undefined,
+        supportEmail: supportEmail.trim() || undefined,
         trustBadge1: trustBadge1.trim(),
         trustBadge2: trustBadge2.trim(),
         trustBadge3: trustBadge3.trim(),
@@ -428,6 +432,26 @@ export default function EditSiteForm({
               </div>
             ))}
           </div>
+        </Field>
+      </Section>
+
+      <Section title="Footer">
+        <Field label="Tagline" hint="Left side of footer bar">
+          <input
+            value={footerTagline}
+            onChange={(e) => setFooterTagline(e.target.value)}
+            placeholder="Powered by FASTSIGNS Enterprise"
+            className={inputCls}
+          />
+        </Field>
+        <Field label="Support email" hint="Right side of footer bar">
+          <input
+            type="email"
+            value={supportEmail}
+            onChange={(e) => setSupportEmail(e.target.value)}
+            placeholder="support@fastsigns.com"
+            className={inputCls}
+          />
         </Field>
       </Section>
 
