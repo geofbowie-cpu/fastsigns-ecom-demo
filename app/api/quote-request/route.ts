@@ -5,32 +5,19 @@
 import { NextResponse } from "next/server"
 import { adminClient } from "@/lib/supabase"
 import { getTenantBySlug } from "@/lib/tenant"
+import { apiError, parseBody } from "@/lib/api-helpers"
+import { logger } from "@/lib/logger"
+import { QuoteRequestSchema } from "@/lib/schemas"
 
 export async function POST(req: Request) {
-  let body: {
-    tenant_slug: string
-    product_slug: string
-    product_name: string
-    email: string
-    first_name?: string
-    last_name?: string
-    comments?: string
-  }
-  try { body = await req.json() }
-  catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }) }
-
-  const email = body.email?.trim().toLowerCase()
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return NextResponse.json({ error: "Valid email is required" }, { status: 400 })
-  }
-  if (!body.tenant_slug || !body.product_slug || !body.product_name) {
-    return NextResponse.json({ error: "Missing tenant or product info" }, { status: 400 })
-  }
+  const result = QuoteRequestSchema.safeParse(await parseBody(req))
+  if (!result.success) return apiError(result.error.issues[0].message)
+  const body = result.data
 
   // Look up tenant ID for the FK
   const tenant = await getTenantBySlug(body.tenant_slug)
   if (!tenant) {
-    return NextResponse.json({ error: "Tenant not found" }, { status: 404 })
+    return apiError("Tenant not found", 404)
   }
 
   const { error } = await adminClient()
@@ -40,16 +27,17 @@ export async function POST(req: Request) {
       tenant_slug: body.tenant_slug,
       product_slug: body.product_slug,
       product_name: body.product_name,
-      email,
+      email: body.email.trim().toLowerCase(),
       first_name: body.first_name?.trim() || null,
       last_name: body.last_name?.trim() || null,
       comments: body.comments?.trim() || null,
     })
 
   if (error) {
-    console.error("quote_requests insert error:", error)
-    return NextResponse.json({ error: "Failed to save request" }, { status: 500 })
+    logger.error("quote-request.insert failed", { error: error.message, tenant_slug: body.tenant_slug })
+    return apiError("Failed to save request", 500)
   }
 
+  logger.info("quote-request.created", { tenant_slug: body.tenant_slug, product_slug: body.product_slug })
   return NextResponse.json({ ok: true })
 }

@@ -4,8 +4,10 @@
 // DELETE /api/master/categories?slug=  — delete by slug
 
 import { NextResponse } from "next/server"
-import { isMasterAuthed } from "@/lib/master-auth"
 import { getAllCategories, upsertCategory, deleteCategory } from "@/lib/products-db"
+import { assertMasterAuth, apiError, parseBody } from "@/lib/api-helpers"
+import { logger } from "@/lib/logger"
+import { CategoryUpsertSchema } from "@/lib/schemas"
 
 function slugify(s: string): string {
   return s
@@ -16,38 +18,27 @@ function slugify(s: string): string {
 }
 
 export async function GET() {
-  if (!(await isMasterAuthed())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const unauth = await assertMasterAuth()
+  if (unauth) return unauth
+  try {
+    const cats = await getAllCategories()
+    return NextResponse.json(cats)
+  } catch (e: any) {
+    logger.error("categories.list failed", { error: e.message })
+    return apiError(e.message, 500)
   }
-  const cats = await getAllCategories()
-  return NextResponse.json(cats)
 }
 
 export async function POST(req: Request) {
-  if (!(await isMasterAuthed())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-  let body: {
-    slug?: string
-    name: string
-    icon?: string
-    description?: string
-    image_url?: string | null
-    product_slugs?: string[]
-  }
-  try {
-    body = await req.json()
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
-  }
-
-  if (!body.name?.trim()) {
-    return NextResponse.json({ error: "Name is required" }, { status: 400 })
-  }
+  const unauth = await assertMasterAuth()
+  if (unauth) return unauth
+  const result = CategoryUpsertSchema.safeParse(await parseBody(req))
+  if (!result.success) return apiError(result.error.issues[0].message)
+  const body = result.data
 
   const slug = body.slug?.trim() || slugify(body.name)
   if (!slug) {
-    return NextResponse.json({ error: "Could not derive slug from name" }, { status: 400 })
+    return apiError("Could not derive slug from name")
   }
 
   try {
@@ -59,25 +50,28 @@ export async function POST(req: Request) {
       image_url: body.image_url ?? null,
       product_slugs: body.product_slugs ?? [],
     })
+    logger.info("category.upsert", { slug })
     return NextResponse.json(cat)
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    logger.error("categories.upsert failed", { error: e.message, slug })
+    return apiError(e.message, 500)
   }
 }
 
 export async function DELETE(req: Request) {
-  if (!(await isMasterAuthed())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
+  const unauth = await assertMasterAuth()
+  if (unauth) return unauth
   const { searchParams } = new URL(req.url)
   const slug = searchParams.get("slug")
   if (!slug) {
-    return NextResponse.json({ error: "slug param required" }, { status: 400 })
+    return apiError("slug param required")
   }
   try {
     await deleteCategory(slug)
+    logger.info("category.delete", { slug })
     return NextResponse.json({ ok: true })
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    logger.error("categories.delete failed", { error: e.message, slug })
+    return apiError(e.message, 500)
   }
 }

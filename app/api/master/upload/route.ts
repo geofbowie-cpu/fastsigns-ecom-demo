@@ -2,9 +2,10 @@
 // Master-auth gated. Stores in `tenant-assets` bucket and returns a public URL.
 
 import { NextResponse } from "next/server"
-import { isMasterAuthed } from "@/lib/master-auth"
 import { adminClient } from "@/lib/supabase"
 import { randomBytes } from "crypto"
+import { assertMasterAuth, apiError } from "@/lib/api-helpers"
+import { logger } from "@/lib/logger"
 
 const MAX_BYTES = 10 * 1024 * 1024 // 10 MB
 const ALLOWED_TYPES = new Set([
@@ -22,15 +23,14 @@ const EXT_BY_TYPE: Record<string, string> = {
 }
 
 export async function POST(req: Request) {
-  if (!(await isMasterAuthed())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
+  const unauth = await assertMasterAuth()
+  if (unauth) return unauth
 
   let form: FormData
   try {
     form = await req.formData()
   } catch {
-    return NextResponse.json({ error: "Expected multipart form" }, { status: 400 })
+    return apiError("Expected multipart form")
   }
 
   const file = form.get("file")
@@ -38,20 +38,14 @@ export async function POST(req: Request) {
   const kind = String(form.get("kind") ?? "hero").trim().toLowerCase()
 
   if (!(file instanceof Blob)) {
-    return NextResponse.json({ error: "Missing file" }, { status: 400 })
+    return apiError("Missing file")
   }
   if (file.size > MAX_BYTES) {
-    return NextResponse.json(
-      { error: `File too large (${(file.size / 1024 / 1024).toFixed(1)} MB > 10 MB)` },
-      { status: 400 }
-    )
+    return apiError(`File too large (${(file.size / 1024 / 1024).toFixed(1)} MB > 10 MB)`)
   }
   const type = file.type || "application/octet-stream"
   if (!ALLOWED_TYPES.has(type)) {
-    return NextResponse.json(
-      { error: `Unsupported type: ${type}. Use PNG, JPG, WEBP, or SVG.` },
-      { status: 400 }
-    )
+    return apiError(`Unsupported type: ${type}. Use PNG, JPG, WEBP, or SVG.`)
   }
 
   const ext = EXT_BY_TYPE[type] ?? "bin"
@@ -69,9 +63,11 @@ export async function POST(req: Request) {
       cacheControl: "31536000, immutable",
     })
   if (upErr) {
-    return NextResponse.json({ error: upErr.message }, { status: 500 })
+    logger.error("upload.store failed", { error: upErr.message, key })
+    return apiError(upErr.message, 500)
   }
 
   const { data } = sb.storage.from("tenant-assets").getPublicUrl(key)
+  logger.info("upload.complete", { key, size: buffer.byteLength })
   return NextResponse.json({ url: data.publicUrl, key })
 }

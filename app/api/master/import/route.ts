@@ -11,8 +11,9 @@
 //                       existing products with this import_tag first.
 
 import { NextResponse } from "next/server"
-import { isMasterAuthed } from "@/lib/master-auth"
 import { adminClient } from "@/lib/supabase"
+import { assertMasterAuth, apiError } from "@/lib/api-helpers"
+import { logger } from "@/lib/logger"
 import { upsertProducts, upsertCategories } from "@/lib/products-db"
 import Papa from "papaparse"
 import JSZip from "jszip"
@@ -41,15 +42,14 @@ const MIME_TO_EXT: Record<string, string> = {
 }
 
 export async function POST(req: Request) {
-  if (!(await isMasterAuthed())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
+  const unauth = await assertMasterAuth()
+  if (unauth) return unauth
 
   let formData: FormData
   try {
     formData = await req.formData()
   } catch {
-    return NextResponse.json({ error: "Expected multipart/form-data" }, { status: 400 })
+    return apiError("Expected multipart/form-data")
   }
 
   const csvFile = formData.get("csv") as File | null
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
   const mode = (formData.get("mode") as string | null) ?? "add"
 
   if (!csvFile) {
-    return NextResponse.json({ error: "csv file is required" }, { status: 400 })
+    return apiError("csv file is required")
   }
 
   // ── 1. Parse CSV ────────────────────────────────────────────
@@ -76,13 +76,10 @@ export async function POST(req: Request) {
   })
 
   if (parseErrors.length > 0) {
-    return NextResponse.json(
-      { error: `CSV parse error: ${parseErrors[0].message}` },
-      { status: 400 }
-    )
+    return apiError(`CSV parse error: ${parseErrors[0].message}`)
   }
   if (rows.length === 0) {
-    return NextResponse.json({ error: "CSV has no data rows" }, { status: 400 })
+    return apiError("CSV has no data rows")
   }
 
   // ── 2. Resolve image map (manifest first, then optional ZIP) ───
@@ -98,7 +95,7 @@ export async function POST(req: Request) {
         if (typeof url === "string" && url) zipImages[slugify(slug)] = url
       }
     } catch {
-      return NextResponse.json({ error: "image_manifest must be valid JSON" }, { status: 400 })
+      return apiError("image_manifest must be valid JSON")
     }
   }
 
@@ -146,7 +143,8 @@ export async function POST(req: Request) {
         })
       )
     } catch (e: any) {
-      return NextResponse.json({ error: `ZIP error: ${e.message}` }, { status: 400 })
+      logger.error("import.zip failed", { error: e.message })
+      return apiError(`ZIP error: ${e.message}`)
     }
   }
 
@@ -203,10 +201,8 @@ export async function POST(req: Request) {
       .delete()
       .eq("import_tag", importTag)
     if (error) {
-      return NextResponse.json(
-        { error: `Failed to clear existing import: ${error.message}` },
-        { status: 500 }
-      )
+      logger.error("import.replace failed", { error: error.message, importTag })
+      return apiError(`Failed to clear existing import: ${error.message}`, 500)
     }
   }
 
@@ -217,9 +213,11 @@ export async function POST(req: Request) {
 
   const { inserted, error: upsertError } = await upsertProducts(productRows)
   if (upsertError) {
-    return NextResponse.json({ error: upsertError }, { status: 500 })
+    logger.error("import.upsert failed", { error: upsertError, importTag })
+    return apiError(upsertError, 500)
   }
 
+  logger.info("import.complete", { importTag, products: inserted, mode })
   return NextResponse.json({
     ok: true,
     import_tag: importTag,

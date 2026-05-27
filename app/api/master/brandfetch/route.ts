@@ -3,10 +3,12 @@
 // depend on Brandfetch's CDN long-term.
 
 import { NextResponse } from "next/server"
-import { isMasterAuthed } from "@/lib/master-auth"
 import { fetchBrand } from "@/lib/brandfetch"
 import { adminClient } from "@/lib/supabase"
 import { randomBytes } from "crypto"
+import { assertMasterAuth, apiError, parseBody } from "@/lib/api-helpers"
+import { logger } from "@/lib/logger"
+import { BrandfetchSchema } from "@/lib/schemas"
 
 const MIME_TO_EXT: Record<string, string> = {
   "image/png": "png",
@@ -42,21 +44,19 @@ async function rehostLogo(
 }
 
 export async function POST(req: Request) {
-  if (!(await isMasterAuthed())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-  const body = await req.json().catch(() => ({}))
-  const domain = String(body.domain ?? "").trim()
-  const slug = body.slug ? String(body.slug).trim().toLowerCase() : null
-  if (!domain) {
-    return NextResponse.json({ error: "domain is required" }, { status: 400 })
-  }
+  const unauth = await assertMasterAuth()
+  if (unauth) return unauth
+  const result = BrandfetchSchema.safeParse(await parseBody(req))
+  if (!result.success) return apiError(result.error.issues[0].message)
+  const { domain, slug } = result.data
+  const cleanSlug = slug ? slug.trim().toLowerCase() : null
   try {
     const hit = await fetchBrand(domain)
     let hostedLogoUrl: string | null = null
     if (hit.logoUrl) {
-      hostedLogoUrl = await rehostLogo(hit.logoUrl, slug)
+      hostedLogoUrl = await rehostLogo(hit.logoUrl, cleanSlug)
     }
+    logger.info("brandfetch.fetch", { domain, rehosted: !!hostedLogoUrl })
     return NextResponse.json({
       brand: {
         name: hit.name,
@@ -70,6 +70,7 @@ export async function POST(req: Request) {
       },
     })
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 400 })
+    logger.error("brandfetch.fetch failed", { error: e.message, domain })
+    return apiError(e.message, 400)
   }
 }
