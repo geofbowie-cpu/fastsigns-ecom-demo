@@ -161,7 +161,11 @@ export default async function TenantHomePage({
               {b.heroCta2Text && (
                 <Link
                   href={`/sites/${slug}/${b.heroCta2Url}`}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm bg-white/10 text-white border border-white/20 hover:bg-white/20"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity"
+                  style={b.heroCta2Color
+                    ? { backgroundColor: b.heroCta2Color, color: b.heroCta2TextColor }
+                    : { backgroundColor: "rgba(255,255,255,0.1)", color: "#ffffff", border: "1px solid rgba(255,255,255,0.2)" }
+                  }
                 >
                   {b.heroCta2Text}
                 </Link>

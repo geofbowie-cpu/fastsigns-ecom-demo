@@ -87,6 +87,8 @@ export function resolveBrand(brand: TenantBrand) {
     heroCta1Color: str(brand.heroCta1Color, str(brand.buttonColor as string | undefined, primary)),
     heroCta2Text: str(brand.heroCta2Text, ""),
     heroCta2Url: str(brand.heroCta2Url, ""),
+    heroCta2Color: (brand.heroCta2Color as string | undefined) ?? null,
+    heroCta2TextColor: str(brand.heroCta2TextColor as string | undefined, "#ffffff"),
     heroBgImage: brand.heroBgImage ?? null,
     heroBgPosition: brand.heroBgPosition ?? { x: 50, y: 50 },
     heroBgZoom: brand.heroBgZoom ?? 1,

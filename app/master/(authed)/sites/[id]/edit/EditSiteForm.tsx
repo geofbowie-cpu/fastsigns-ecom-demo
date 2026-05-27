@@ -89,6 +89,12 @@ export default function EditSiteForm({
   const [buttonTextColor, setButtonTextColor] = useState(
     (tenant.brand?.buttonTextColor as string) ?? "#ffffff"
   )
+  const [heroCta1Text, setHeroCta1Text] = useState((tenant.brand?.heroCta1Text as string) ?? "")
+  const [heroCta1Url, setHeroCta1Url] = useState((tenant.brand?.heroCta1Url as string) ?? "")
+  const [heroCta2Text, setHeroCta2Text] = useState((tenant.brand?.heroCta2Text as string) ?? "")
+  const [heroCta2Url, setHeroCta2Url] = useState((tenant.brand?.heroCta2Url as string) ?? "")
+  const [heroCta2Color, setHeroCta2Color] = useState((tenant.brand?.heroCta2Color as string) ?? "#ffffff")
+  const [heroCta2TextColor, setHeroCta2TextColor] = useState((tenant.brand?.heroCta2TextColor as string) ?? "#1e3a5f")
   const [trustBadge1, setTrustBadge1] = useState((tenant.brand?.trustBadge1 as string) ?? "")
   const [trustBadge2, setTrustBadge2] = useState((tenant.brand?.trustBadge2 as string) ?? "")
   const [trustBadge3, setTrustBadge3] = useState((tenant.brand?.trustBadge3 as string) ?? "")
@@ -186,6 +192,12 @@ export default function EditSiteForm({
         orderCtaText: orderCtaText.trim() || "Contact to order",
         quoteCtaText: quoteCtaText.trim() || "Get a quote →",
         categoryImages: Object.keys(categoryImages).length > 0 ? categoryImages : undefined,
+        heroCta1Text: heroCta1Text.trim() || "Browse Products",
+        heroCta1Url: heroCta1Url.trim() || "products",
+        heroCta2Text: heroCta2Text.trim() || undefined,
+        heroCta2Url: heroCta2Url.trim() || "products",
+        heroCta2Color: heroCta2Color,
+        heroCta2TextColor: heroCta2TextColor,
         trustBadge1: trustBadge1.trim(),
         trustBadge2: trustBadge2.trim(),
         trustBadge3: trustBadge3.trim(),
@@ -319,6 +331,44 @@ export default function EditSiteForm({
               <div key={label} className="flex items-center gap-1.5">
                 <span className="text-[11px] text-gray-400 w-14 shrink-0">{label}</span>
                 <ColorInput value={value} onChange={onChange} />
+              </div>
+            ))}
+          </div>
+        </Field>
+        <Field label="Hero buttons" hint="Label · URL · bg · text" wide>
+          <div className="space-y-2">
+            {[
+              {
+                label: "Button 1",
+                text: heroCta1Text, onText: setHeroCta1Text, textPlaceholder: "Browse Products",
+                url: heroCta1Url,  onUrl: setHeroCta1Url,   urlPlaceholder: "products",
+                color: buttonColor,       onColor: setButtonColor,
+                textColor: buttonTextColor, onTextColor: setButtonTextColor,
+              },
+              {
+                label: "Button 2",
+                text: heroCta2Text, onText: setHeroCta2Text, textPlaceholder: "Optional — leave blank to hide",
+                url: heroCta2Url,  onUrl: setHeroCta2Url,   urlPlaceholder: "about",
+                color: heroCta2Color,       onColor: setHeroCta2Color,
+                textColor: heroCta2TextColor, onTextColor: setHeroCta2TextColor,
+              },
+            ].map(({ label, text, onText, textPlaceholder, url, onUrl, urlPlaceholder, color, onColor, textColor, onTextColor }) => (
+              <div key={label} className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[11px] text-gray-400 w-14 shrink-0">{label}</span>
+                <input
+                  value={text}
+                  onChange={(e) => onText(e.target.value)}
+                  placeholder={textPlaceholder}
+                  className="flex-1 min-w-[120px] px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+                <input
+                  value={url}
+                  onChange={(e) => onUrl(e.target.value)}
+                  placeholder={urlPlaceholder}
+                  className="w-28 px-2 py-1 border border-gray-300 rounded-md text-sm font-mono focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+                <ColorInput value={color} onChange={onColor} />
+                <ColorInput value={textColor} onChange={onTextColor} />
               </div>
             ))}
           </div>
