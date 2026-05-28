@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import type { DbProduct } from "@/lib/products-db"
 import type { BankCategory } from "@/lib/product-bank"
+import ImageUploader from "../_shared/ImageUploader"
 
 function slugify(s: string): string {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
@@ -188,14 +189,15 @@ function ProductForm({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1">Image URL</label>
-          <input
-            type="url"
+        <div className="sm:col-span-2">
+          <label className="block text-xs font-semibold text-gray-600 mb-1">Image</label>
+          <ImageUploader
             value={form.image_url}
-            onChange={(e) => set("image_url", e.target.value)}
-            placeholder="https://example.com/product.jpg"
-            className={inputCls}
+            onChange={(url) => set("image_url", url)}
+            kind="logo"
+            previewAspect="4/3"
+            maxPreviewHeight={120}
+            recommendation="PNG, JPG, or WEBP. Up to 10 MB."
           />
         </div>
         <div>

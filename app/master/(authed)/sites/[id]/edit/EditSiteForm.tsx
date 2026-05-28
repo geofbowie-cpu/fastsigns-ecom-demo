@@ -1245,14 +1245,16 @@ function SiteProductsManager({
                 className={inputCls}
               />
             </div>
-            <div>
-              <label className="block text-[11px] text-gray-500 mb-0.5">Image URL</label>
-              <input
-                type="url"
+            <div className="col-span-2">
+              <label className="block text-[11px] text-gray-500 mb-1">Image</label>
+              <ImageUploader
                 value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="https://…"
-                className={inputCls}
+                onChange={setImageUrl}
+                slug={siteImportTag.replace(/^site-/, "")}
+                kind="logo"
+                previewAspect="4/3"
+                maxPreviewHeight={120}
+                recommendation="PNG, JPG, or WEBP. Up to 10 MB."
               />
             </div>
           </div>
