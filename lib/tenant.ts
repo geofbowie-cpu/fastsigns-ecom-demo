@@ -28,6 +28,8 @@ export type TenantBrand = {
   heroCta2Url?: string
   heroCta2Color?: string
   heroCta2TextColor?: string
+  heroCta1Icon?: string
+  heroCta2Icon?: string
   heroBgImage?: string | null
   heroBgPosition?: { x: number; y: number }
   heroBgZoom?: number

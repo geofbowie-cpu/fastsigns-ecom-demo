@@ -156,7 +156,7 @@ export default async function TenantHomePage({
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity"
                 style={{ backgroundColor: b.heroCta1Color, color: b.heroCta1TextColor }}
               >
-                {b.heroCta1Text} →
+                {b.heroCta1Text}{b.heroCta1Icon ? ` ${b.heroCta1Icon}` : ""}
               </Link>
               {b.heroCta2Text && (
                 <Link
@@ -167,7 +167,7 @@ export default async function TenantHomePage({
                     : { backgroundColor: "rgba(255,255,255,0.1)", color: "#ffffff", border: "1px solid rgba(255,255,255,0.2)" }
                   }
                 >
-                  {b.heroCta2Text}
+                  {b.heroCta2Text}{b.heroCta2Icon ? ` ${b.heroCta2Icon}` : ""}
                 </Link>
               )}
             </div>

@@ -96,6 +96,8 @@ export default function EditSiteForm({
   const [heroCta2Url, setHeroCta2Url] = useState((tenant.brand?.heroCta2Url as string) ?? "")
   const [heroCta2Color, setHeroCta2Color] = useState((tenant.brand?.heroCta2Color as string) ?? "#ffffff")
   const [heroCta2TextColor, setHeroCta2TextColor] = useState((tenant.brand?.heroCta2TextColor as string) ?? "#1e3a5f")
+  const [heroCta1Icon, setHeroCta1Icon] = useState((tenant.brand?.heroCta1Icon as string) ?? "→")
+  const [heroCta2Icon, setHeroCta2Icon] = useState((tenant.brand?.heroCta2Icon as string) ?? "")
   const [footerTagline, setFooterTagline] = useState((tenant.brand?.footerTagline as string) ?? "")
   const [supportEmail, setSupportEmail] = useState((tenant.brand?.supportEmail as string) ?? "")
   const [trustBadge1, setTrustBadge1] = useState((tenant.brand?.trustBadge1 as string) ?? "")
@@ -207,6 +209,8 @@ export default function EditSiteForm({
         heroCta2Url: heroCta2Url.trim() || "products",
         heroCta2Color: heroCta2Color,
         heroCta2TextColor: heroCta2TextColor,
+        heroCta1Icon: heroCta1Icon,
+        heroCta2Icon: heroCta2Icon,
         footerTagline: footerTagline.trim() || undefined,
         supportEmail: supportEmail.trim() || undefined,
         trustBadge1: trustBadge1.trim(),
@@ -356,6 +360,7 @@ export default function EditSiteForm({
                 url: heroCta1Url,  onUrl: setHeroCta1Url,   urlPlaceholder: "products",
                 color: buttonColor,       onColor: setButtonColor,
                 textColor: buttonTextColor, onTextColor: setButtonTextColor,
+                icon: heroCta1Icon, onIcon: setHeroCta1Icon,
               },
               {
                 label: "Button 2",
@@ -363,24 +368,51 @@ export default function EditSiteForm({
                 url: heroCta2Url,  onUrl: setHeroCta2Url,   urlPlaceholder: "about",
                 color: heroCta2Color,       onColor: setHeroCta2Color,
                 textColor: heroCta2TextColor, onTextColor: setHeroCta2TextColor,
+                icon: heroCta2Icon, onIcon: setHeroCta2Icon,
               },
-            ].map(({ label, text, onText, textPlaceholder, url, onUrl, urlPlaceholder, color, onColor, textColor, onTextColor }) => (
-              <div key={label} className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[11px] text-gray-400 w-14 shrink-0">{label}</span>
-                <input
-                  value={text}
-                  onChange={(e) => onText(e.target.value)}
-                  placeholder={textPlaceholder}
-                  className="flex-1 min-w-[120px] px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-                <input
-                  value={url}
-                  onChange={(e) => onUrl(e.target.value)}
-                  placeholder={urlPlaceholder}
-                  className="w-28 px-2 py-1 border border-gray-300 rounded-md text-sm font-mono focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-                <ColorInput value={color} onChange={onColor} />
-                <ColorInput value={textColor} onChange={onTextColor} />
+            ].map(({ label, text, onText, textPlaceholder, url, onUrl, urlPlaceholder, color, onColor, textColor, onTextColor, icon, onIcon }) => (
+              <div key={label} className="space-y-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[11px] text-gray-400 w-14 shrink-0">{label}</span>
+                  <input
+                    value={text}
+                    onChange={(e) => onText(e.target.value)}
+                    placeholder={textPlaceholder}
+                    className="flex-1 min-w-[120px] px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                  <input
+                    value={url}
+                    onChange={(e) => onUrl(e.target.value)}
+                    placeholder={urlPlaceholder}
+                    className="w-28 px-2 py-1 border border-gray-300 rounded-md text-sm font-mono focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                  <ColorInput value={color} onChange={onColor} />
+                  <ColorInput value={textColor} onChange={onTextColor} />
+                </div>
+                <div className="flex items-center gap-1.5 pl-[72px]">
+                  <span className="text-[11px] text-gray-400 shrink-0">Icon</span>
+                  <input
+                    value={icon}
+                    onChange={(e) => onIcon(e.target.value)}
+                    placeholder="none"
+                    maxLength={4}
+                    className="w-16 px-2 py-0.5 border border-gray-300 rounded-md text-sm text-center focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                  {["→", "↗", "▶", "✓", "✦", ""].map((preset) => (
+                    <button
+                      key={preset || "none"}
+                      type="button"
+                      onClick={() => onIcon(preset)}
+                      className={`text-xs px-2 py-0.5 rounded border transition-colors ${
+                        icon === preset
+                          ? "border-blue-500 bg-blue-50 text-blue-700"
+                          : "border-gray-200 text-gray-500 hover:border-gray-400"
+                      }`}
+                    >
+                      {preset || "none"}
+                    </button>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
