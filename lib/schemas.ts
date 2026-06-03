@@ -67,5 +67,5 @@ export const UserEmailSchema = z.object({
 // ── Brandfetch ───────────────────────────────────────────────
 export const BrandfetchSchema = z.object({
   domain: z.string().min(1).max(253),
-  slug: z.string().optional(),
+  slug: z.string().nullable().optional(),
 })

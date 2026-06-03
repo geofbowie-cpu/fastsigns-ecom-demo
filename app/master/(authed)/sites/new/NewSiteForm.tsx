@@ -51,7 +51,7 @@ export default function NewSiteForm({
       const res = await fetch("/api/master/brandfetch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ domain: domain.trim(), slug: slug || null }),
+        body: JSON.stringify({ domain: domain.trim(), slug: slug || undefined }),
       })
       const json = await res.json()
       if (!res.ok) {
