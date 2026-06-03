@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { trackQuoteRequest } from "@/lib/track"
 
 export default function QuoteButton({
   tenantSlug,
@@ -66,6 +67,7 @@ export default function QuoteButton({
         setError(j.error ?? "Something went wrong")
         return
       }
+      trackQuoteRequest(productSlug, productName, tenantSlug)
       setSent(true)
     } finally {
       setBusy(false)

@@ -7,6 +7,8 @@ import { resolveBrand } from "@/lib/resolve-brand"
 import { getProducts, getCategories } from "@/lib/products-db"
 import { isMasterAuthed } from "@/lib/master-auth"
 import QuoteButton from "./_components/QuoteButton"
+import ProductViewTracker from "./_components/ProductViewTracker"
+import { PhoneLink, EmailLink } from "@/components/TrackableLink"
 
 export default async function ProductDetailPage({
   params,
@@ -50,6 +52,12 @@ export default async function ProductDetailPage({
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <ProductViewTracker
+        productSlug={product.slug}
+        productName={product.name}
+        category={product.category}
+        tenantSlug={slug}
+      />
       {/* Live contact bar */}
       {isLive && b.contactEmail && (
         <div className="bg-gray-900 text-white text-xs px-4 py-2 flex items-center justify-end gap-4">
@@ -58,13 +66,13 @@ export default async function ProductDetailPage({
               Your rep: <span className="text-white font-medium">{b.contactName}</span>
             </span>
           )}
-          <a href={`mailto:${b.contactEmail}`} className="text-blue-300 hover:text-blue-200">
+          <EmailLink email={b.contactEmail} tenantSlug={slug} context="contact_bar" className="text-blue-300 hover:text-blue-200">
             {b.contactEmail}
-          </a>
+          </EmailLink>
           {b.contactPhone && (
-            <a href={`tel:${b.contactPhone}`} className="text-gray-300 hover:text-white">
+            <PhoneLink phone={b.contactPhone} tenantSlug={slug} className="text-gray-300 hover:text-white">
               {b.contactPhone}
-            </a>
+            </PhoneLink>
           )}
         </div>
       )}
@@ -223,21 +231,25 @@ export default async function ProductDetailPage({
                       : "Contact us to place your order or ask about custom sizing and pricing."}
                   </p>
                 </div>
-                <a
+                <EmailLink
+                  email={ctaEmail}
                   href={mailHref}
+                  tenantSlug={slug}
+                  context="product_cta"
                   className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-bold text-sm hover:opacity-90 transition-opacity"
                   style={{ backgroundColor: b.buttonColor, color: b.buttonTextColor }}
                 >
                   {b.orderCtaText} — {product.name}
-                </a>
+                </EmailLink>
                 {b.contactPhone && (
-                  <a
-                    href={`tel:${b.contactPhone}`}
+                  <PhoneLink
+                    phone={b.contactPhone}
+                    tenantSlug={slug}
                     className="flex items-center justify-center gap-2 w-full py-3 rounded-xl font-semibold text-sm border-2 text-gray-700 hover:bg-gray-50"
                     style={{ borderColor: b.buttonColor }}
                   >
                     📞 {b.contactPhone}
-                  </a>
+                  </PhoneLink>
                 )}
               </div>
             ) : (

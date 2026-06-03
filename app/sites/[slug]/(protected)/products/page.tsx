@@ -9,6 +9,7 @@ import { getProducts, getCategories } from "@/lib/products-db"
 import { isMasterAuthed } from "@/lib/master-auth"
 import SearchInput from "./SearchInput"
 import CategoryIcon from "@/components/CategoryIcon"
+import { PhoneLink, EmailLink } from "@/components/TrackableLink"
 import type { ResolvedBrand } from "@/lib/resolve-brand"
 import type { Tenant } from "@/lib/tenant"
 import type { BankProduct } from "@/lib/product-bank"
@@ -67,8 +68,8 @@ export default async function TenantProductsPage({
       {tenant.status === "live" && b.contactEmail && (
         <div className="bg-gray-900 text-white text-xs px-4 py-2 flex items-center justify-end gap-4">
           {b.contactName && <span className="text-gray-400">Your rep: <span className="text-white font-medium">{b.contactName}</span></span>}
-          <a href={`mailto:${b.contactEmail}`} className="text-blue-300 hover:text-blue-200">{b.contactEmail}</a>
-          {b.contactPhone && <a href={`tel:${b.contactPhone}`} className="text-gray-300 hover:text-white">{b.contactPhone}</a>}
+          <EmailLink email={b.contactEmail} tenantSlug={slug} context="contact_bar" className="text-blue-300 hover:text-blue-200">{b.contactEmail}</EmailLink>
+          {b.contactPhone && <PhoneLink phone={b.contactPhone} tenantSlug={slug} className="text-gray-300 hover:text-white">{b.contactPhone}</PhoneLink>}
         </div>
       )}
       {isAdmin && (
@@ -118,7 +119,7 @@ export default async function TenantProductsPage({
           </div>
           <div className="w-full sm:w-72">
             <Suspense>
-              <SearchInput defaultValue={q} primaryColor={b.primaryColor} />
+              <SearchInput defaultValue={q} primaryColor={b.primaryColor} tenantSlug={slug} />
             </Suspense>
           </div>
         </div>

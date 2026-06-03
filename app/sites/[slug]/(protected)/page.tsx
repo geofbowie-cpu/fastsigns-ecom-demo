@@ -7,6 +7,8 @@ import { resolveBrand } from "@/lib/resolve-brand"
 import { getProducts, getCategories } from "@/lib/products-db"
 import { isMasterAuthed } from "@/lib/master-auth"
 import CategoryIcon from "@/components/CategoryIcon"
+import { PhoneLink, EmailLink } from "@/components/TrackableLink"
+import HeroCtaButtons from "./_components/HeroCtaButtons"
 
 export async function generateMetadata({
   params,
@@ -59,8 +61,8 @@ export default async function TenantHomePage({
       {tenant.status === "live" && b.contactEmail && (
         <div className="bg-gray-900 text-white text-xs px-4 py-2 flex items-center justify-end gap-4">
           {b.contactName && <span className="text-gray-400">Your rep: <span className="text-white font-medium">{b.contactName}</span></span>}
-          <a href={`mailto:${b.contactEmail}`} className="text-blue-300 hover:text-blue-200">{b.contactEmail}</a>
-          {b.contactPhone && <a href={`tel:${b.contactPhone}`} className="text-gray-300 hover:text-white">{b.contactPhone}</a>}
+          <EmailLink email={b.contactEmail} tenantSlug={slug} context="contact_bar" className="text-blue-300 hover:text-blue-200">{b.contactEmail}</EmailLink>
+          {b.contactPhone && <PhoneLink phone={b.contactPhone} tenantSlug={slug} className="text-gray-300 hover:text-white">{b.contactPhone}</PhoneLink>}
         </div>
       )}
       {/* Admin bar — only visible when master-authed */}
@@ -150,27 +152,20 @@ export default async function TenantHomePage({
             <p className="text-lg text-white/80 leading-relaxed mb-8 max-w-xl">
               {b.heroSubheading}
             </p>
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href={`/sites/${slug}/${b.heroCta1Url}`}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity"
-                style={{ backgroundColor: b.heroCta1Color, color: b.heroCta1TextColor }}
-              >
-                {b.heroCta1Text}{b.heroCta1Icon ? ` ${b.heroCta1Icon}` : ""}
-              </Link>
-              {b.heroCta2Text && (
-                <Link
-                  href={`/sites/${slug}/${b.heroCta2Url}`}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity"
-                  style={b.heroCta2Color
-                    ? { backgroundColor: b.heroCta2Color, color: b.heroCta2TextColor }
-                    : { backgroundColor: "rgba(255,255,255,0.1)", color: "#ffffff", border: "1px solid rgba(255,255,255,0.2)" }
-                  }
-                >
-                  {b.heroCta2Text}{b.heroCta2Icon ? ` ${b.heroCta2Icon}` : ""}
-                </Link>
-              )}
-            </div>
+            <HeroCtaButtons
+              slug={slug}
+              tenantSlug={slug}
+              cta1Text={b.heroCta1Text}
+              cta1Url={b.heroCta1Url}
+              cta1Color={b.heroCta1Color}
+              cta1TextColor={b.heroCta1TextColor}
+              cta1Icon={b.heroCta1Icon}
+              cta2Text={b.heroCta2Text ?? undefined}
+              cta2Url={b.heroCta2Url ?? undefined}
+              cta2Color={b.heroCta2Color ?? undefined}
+              cta2TextColor={b.heroCta2TextColor ?? undefined}
+              cta2Icon={b.heroCta2Icon ?? undefined}
+            />
             {trustBadges.length > 0 && (
               <div className="flex flex-wrap gap-4 mt-8">
                 {trustBadges.map((t) => (

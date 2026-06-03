@@ -1,19 +1,42 @@
 "use client"
 
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
-import { useCallback, useTransition } from "react"
+import { useCallback, useEffect, useRef, useTransition } from "react"
+import { trackSearch } from "@/lib/track"
 
 export default function SearchInput({
   defaultValue,
   primaryColor,
+  tenantSlug,
 }: {
   defaultValue?: string
   primaryColor: string
+  tenantSlug: string
 }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [, startTransition] = useTransition()
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Fire search tracking event 500ms after the user stops typing
+  const fireTrack = useCallback(
+    (query: string) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      if (!query) return
+      debounceRef.current = setTimeout(() => {
+        trackSearch(query, 0, tenantSlug)
+      }, 500)
+    },
+    [tenantSlug]
+  )
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [])
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -26,8 +49,9 @@ export default function SearchInput({
       startTransition(() => {
         router.replace(`${pathname}?${params.toString()}`)
       })
+      fireTrack(e.target.value)
     },
-    [pathname, router, searchParams]
+    [pathname, router, searchParams, fireTrack]
   )
 
   return (
