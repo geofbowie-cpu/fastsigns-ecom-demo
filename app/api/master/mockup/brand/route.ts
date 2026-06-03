@@ -81,8 +81,14 @@ export async function POST(req: Request) {
   }
 
   try {
-    // 1. Fetch product image and get its natural dimensions
-    const productBuf = await fetchBuffer(product_image_url)
+    // 1. Fetch product image, normalize to sRGB, and get dimensions.
+    // Non-sRGB profiles (CMYK, AdobeRGB, etc.) cause green-channel bleed
+    // when Sharp composites onto white backgrounds — normalize first.
+    const rawProductBuf = await fetchBuffer(product_image_url)
+    const productBuf = await sharp(rawProductBuf)
+      .toColorspace("srgb")
+      .png()
+      .toBuffer()
     const productMeta = await sharp(productBuf).metadata()
     const imgW = productMeta.width ?? 800
     const imgH = productMeta.height ?? 600
@@ -177,7 +183,12 @@ export async function POST(req: Request) {
 
     const finalBuf = await sharp(productBuf)
       .composite([{ input: overlay, top: Math.max(0, top), left: Math.max(0, left) }])
-      .jpeg({ quality: 90 })
+      // Flatten alpha to white before encoding — prevents any residual
+      // transparent-pixel bleed in the JPEG output
+      .flatten({ background: { r: 255, g: 255, b: 255 } })
+      // 4:4:4 chroma subsampling preserves colour on white backgrounds;
+      // default 4:2:0 blurs chroma and causes green-ish fringing
+      .jpeg({ quality: 92, chromaSubsampling: "4:4:4" })
       .toBuffer()
 
     // 6. Upload to Supabase Storage
