@@ -90,7 +90,7 @@ export default async function ProductDetailPage({
       )}
 
       {/* Nav */}
-      <nav className="sticky top-0 z-30 shadow-md" style={{ backgroundColor: b.primaryColor }}>
+      <nav className="sticky top-0 z-30 shadow-md" style={{ backgroundColor: b.headerBgColor }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href={`/sites/${slug}`} className="flex items-center gap-2">
             {b.logoImage ? (

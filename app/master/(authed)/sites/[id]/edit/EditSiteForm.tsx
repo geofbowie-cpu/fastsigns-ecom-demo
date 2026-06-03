@@ -81,6 +81,9 @@ export default function EditSiteForm({
   const [navTextColor, setNavTextColor] = useState(
     (tenant.brand?.navTextColor as string) ?? "#ffffff"
   )
+  const [headerBgColor, setHeaderBgColor] = useState(
+    (tenant.brand?.headerBgColor as string) ?? primaryColor
+  )
   const [heroCta1TextColor, setHeroCta1TextColor] = useState(
     (tenant.brand?.heroCta1TextColor as string) ?? "#000000"
   )
@@ -192,6 +195,7 @@ export default function EditSiteForm({
         primaryColor,
         accentColor,
         navTextColor,
+        headerBgColor,
         buttonColor,
         buttonTextColor,
         heroCta1Color: buttonColor,
@@ -341,6 +345,7 @@ export default function EditSiteForm({
               { label: "Primary", value: primaryColor, onChange: setPrimaryColor },
               { label: "Accent", value: accentColor, onChange: setAccentColor },
               { label: "Nav text", value: navTextColor, onChange: setNavTextColor },
+              { label: "Nav bg", value: headerBgColor, onChange: setHeaderBgColor },
               { label: "Button bg", value: buttonColor, onChange: setButtonColor },
               { label: "Button text", value: buttonTextColor, onChange: setButtonTextColor },
             ].map(({ label, value, onChange }) => (

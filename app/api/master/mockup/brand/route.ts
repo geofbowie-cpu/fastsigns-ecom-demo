@@ -100,9 +100,14 @@ export async function POST(req: Request) {
       try {
         const rawLogo = await fetchBuffer(logo_url.trim())
         logoLayer = await sharp(rawLogo)
+          // Convert to sRGB and ensure alpha channel to eliminate
+          // color-profile green fringing on white backgrounds
+          .toColorspace("srgb")
+          .ensureAlpha()
           .resize(logoMaxW, logoMaxH, {
             fit: "inside",
             withoutEnlargement: false,
+            kernel: sharp.kernel.lanczos3,
           })
           .png()
           .toBuffer()
@@ -153,9 +158,12 @@ export async function POST(req: Request) {
       </svg>`
     )
 
-    // 4. Composite: pill first, then logo on top of pill
+    // 4. Composite: pill first, then logo on top of pill.
+    // Use white (not black) as the transparent base so semi-transparent
+    // logo edges blend toward white rather than black — prevents dark/
+    // green fringing when placed over light product backgrounds.
     const overlay = await sharp({
-      create: { width: pillW, height: pillH, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+      create: { width: pillW, height: pillH, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 0 } },
     })
       .composite([
         { input: pillSvg, top: 0, left: 0 },
