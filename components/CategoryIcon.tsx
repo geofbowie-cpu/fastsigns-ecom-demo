@@ -1,19 +1,24 @@
 "use client"
 
 import {
-  Flag, Layers, Monitor, Car, Navigation, Gift, Tag,
-  Compass, Star, Palette, Package, HelpCircle,
-  ShieldCheck, Truck, Building2, MapPin, Snowflake,
-  Shirt, TreeDeciduous, ParkingCircle, Paintbrush,
+  Flag, Layers, Monitor, Car, Navigation, Gift, Tag, Compass,
+  Star, Palette, Package, HelpCircle, ShieldCheck, Truck, Building2,
+  MapPin, Snowflake, Shirt, ParkingCircle, Paintbrush, Megaphone,
+  Award, LayoutGrid, Factory, Wrench, Users, Image, FileText,
+  BarChart2, Store, Sun, Umbrella, Hammer, Box, Signpost, Route,
+  HardDrive, Leaf, Shield, Printer, Briefcase, Zap, Globe, Camera,
+  Clipboard, TreeDeciduous,
 } from "lucide-react"
 import type { LucideProps } from "lucide-react"
 
 const MAP: Record<string, React.ComponentType<LucideProps>> = {
-  Flag, Layers, Monitor, Car, Navigation, Gift, Tag,
-  Compass, Star, Palette, Package,
-  // Extended set
-  ShieldCheck, Truck, Building2, MapPin, Snowflake,
-  Shirt, TreeDeciduous, ParkingCircle, Paintbrush,
+  Flag, Layers, Monitor, Car, Navigation, Gift, Tag, Compass,
+  Star, Palette, Package, ShieldCheck, Truck, Building2, MapPin,
+  Snowflake, Shirt, ParkingCircle, Paintbrush, Megaphone, Award,
+  LayoutGrid, Factory, Wrench, Users, Image, FileText, BarChart2,
+  Store, Sun, Umbrella, Hammer, Box, Signpost, Route, HardDrive,
+  Leaf, Shield, Printer, Briefcase, Zap, Globe, Camera, Clipboard,
+  TreeDeciduous,
 }
 
 export default function CategoryIcon({

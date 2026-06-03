@@ -5,11 +5,8 @@ import { useRouter } from "next/navigation"
 import type { BankCategory } from "@/lib/product-bank"
 import type { DbProduct } from "@/lib/products-db"
 import ImageUploader from "../_shared/ImageUploader"
-
-const ICONS = [
-  "Flag", "Layers", "Monitor", "Car", "Navigation", "Gift",
-  "Tag", "Compass", "Star", "Palette", "Package",
-]
+import IconPicker from "../_shared/IconPicker"
+import CategoryIcon from "@/components/CategoryIcon"
 
 function slugify(s: string): string {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
@@ -164,16 +161,12 @@ function CategoryRow({
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1">Icon</label>
-              <select
-                value={icon}
-                onChange={(e) => setIcon(e.target.value)}
-                className="w-full px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {ICONS.map((i) => (
-                  <option key={i} value={i}>{i}</option>
-                ))}
-              </select>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">
+                Icon — <span className="font-normal text-gray-400">currently: </span>
+                <CategoryIcon name={icon} size={13} strokeWidth={1.75} className="inline-block align-middle text-gray-600" />
+                <span className="text-gray-500 font-normal ml-1">{icon}</span>
+              </label>
+              <IconPicker value={icon} onChange={setIcon} />
             </div>
           </div>
 
@@ -359,15 +352,7 @@ function NewCategoryForm({
         </div>
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-1">Icon</label>
-          <select
-            value={icon}
-            onChange={(e) => setIcon(e.target.value)}
-            className="w-full px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {ICONS.map((i) => (
-              <option key={i} value={i}>{i}</option>
-            ))}
-          </select>
+          <IconPicker value={icon} onChange={setIcon} />
         </div>
       </div>
 

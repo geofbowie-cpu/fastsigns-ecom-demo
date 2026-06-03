@@ -9,6 +9,7 @@ import type { Tenant } from "@/lib/tenant"
 import ImageUploader from "../../../_shared/ImageUploader"
 import MockupEditor from "./MockupEditor"
 import CategoryIcon from "@/components/CategoryIcon"
+import IconPicker from "../../../_shared/IconPicker"
 
 // ── Dynamic Mockups types ──────────────────────────────────────
 type DmSmartObject = { uuid: string; name: string }
@@ -1025,15 +1026,9 @@ function CategoryManager({
               />
               {newSlug && <span className="text-[10px] text-gray-400 font-mono">/{newSlug}</span>}
             </div>
-            <div>
-              <label className="block text-[11px] text-gray-500 mb-0.5">Icon</label>
-              <select
-                value={newIcon}
-                onChange={(e) => setNewIcon(e.target.value)}
-                className={inputCls}
-              >
-                {CAT_ICONS.map((i) => <option key={i} value={i}>{i}</option>)}
-              </select>
+            <div className="col-span-2">
+              <label className="block text-[11px] text-gray-500 mb-1">Icon</label>
+              <IconPicker value={newIcon} onChange={setNewIcon} />
             </div>
           </div>
 
