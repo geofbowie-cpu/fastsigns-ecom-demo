@@ -384,7 +384,7 @@ export default function MockupEditor({
     try {
       let dataUrl: string
       try {
-        dataUrl = canvasRef.current!.toDataURL("image/jpeg", 0.92)
+        dataUrl = canvasRef.current!.toDataURL("image/png")
       } catch {
         throw new Error("Cannot save: image source is CORS-blocked. Check that the product and logo image hosts return Access-Control-Allow-Origin.")
       }
@@ -392,7 +392,7 @@ export default function MockupEditor({
       const res = await fetch("/api/master/mockup/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image_base64: dataUrl, tenant_slug: tenantSlug, mime: "image/jpeg" }),
+        body: JSON.stringify({ image_base64: dataUrl, tenant_slug: tenantSlug, mime: "image/png" }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? "Save failed")
