@@ -1,8 +1,25 @@
+import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
 import { getTenantBySlug } from "@/lib/tenant"
 import { getTenantSession, cookieName } from "@/lib/tenant-auth"
 import { isMasterAuthed } from "@/lib/master-auth"
+import { resolveBrand } from "@/lib/resolve-brand"
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const tenant = await getTenantBySlug(slug)
+  if (!tenant) return { title: "Storefront" }
+  const b = resolveBrand(tenant.brand)
+  return {
+    title: `${b.company} — Storefront`,
+    description: b.heroSubheading,
+  }
+}
 
 export default async function ProtectedSiteLayout({
   children,
