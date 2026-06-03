@@ -2078,18 +2078,28 @@ function ProductOverridesPanel({
 
                   {/* Product image — compact thumbnail + uploader */}
                   {!disabled && (
-                    <ProductImageCell
-                      // Show the override if set, otherwise the product's own
-                      // image. Removing an override falls back to the product
-                      // default automatically.
-                      value={ov.imageUrl ?? p.imageUrl ?? ""}
-                      onChange={(url) => onChange(p.slug, { imageUrl: url || undefined })}
-                      tenantSlug={tenantSlug}
-                      productImageUrl={ov.imageUrl ?? p.imageUrl ?? ""}
-                      brandLogoUrl={brandLogoUrl}
-                      brandPrimaryColor={brandPrimaryColor}
-                      brandCompanyName={brandCompanyName}
-                    />
+                    <div className="flex flex-col items-center gap-1">
+                      <ProductImageCell
+                        value={ov.imageUrl || p.imageUrl || ""}
+                        onChange={(url) => onChange(p.slug, { imageUrl: url || undefined })}
+                        tenantSlug={tenantSlug}
+                        productImageUrl={ov.imageUrl || p.imageUrl || ""}
+                        brandLogoUrl={brandLogoUrl}
+                        brandPrimaryColor={brandPrimaryColor}
+                        brandCompanyName={brandCompanyName}
+                      />
+                      {/* Visible reset link whenever an image override is active */}
+                      {ov.imageUrl && (
+                        <button
+                          type="button"
+                          onClick={() => onChange(p.slug, { imageUrl: undefined })}
+                          className="text-[10px] text-red-400 hover:text-red-600 leading-none"
+                          title="Remove image override and restore original"
+                        >
+                          Reset
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               )
