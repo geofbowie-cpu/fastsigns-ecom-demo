@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic"
 import Link from "next/link"
 import { listTenants, type Tenant } from "@/lib/tenant"
 import { adminClient } from "@/lib/supabase"
+import SiteCardActions from "./_shared/SiteCardActions"
 
 async function getVisitorCounts(): Promise<Record<string, number>> {
   const { data } = await adminClient()
@@ -50,75 +51,73 @@ function SiteCard({ t, visitorCount }: { t: Tenant; visitorCount: number }) {
       : `${t.enabled_categories.length} categor${t.enabled_categories.length === 1 ? "y" : "ies"}`
 
   return (
-    <Link
-      href={`/master/sites/${t.id}/edit`}
-      className="group bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-md hover:-translate-y-px transition-all overflow-hidden"
-    >
-      {/* Brand header */}
-      <div
-        className="h-24 relative flex items-center justify-center"
-        style={{ backgroundColor: primary }}
-      >
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/30" />
-
-        {/* Status pill */}
-        <div className="absolute top-2.5 right-2.5">
-          <StatusPill status={t.status} />
+    <div className="group bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-md hover:-translate-y-px transition-all overflow-hidden flex flex-col">
+      {/* Clickable area → edit */}
+      <Link href={`/master/sites/${t.id}/edit`} className="flex-1">
+        {/* Brand header */}
+        <div
+          className="h-24 relative flex items-center justify-center"
+          style={{ backgroundColor: primary }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/30" />
+          <div className="absolute top-2.5 right-2.5">
+            <StatusPill status={t.status} />
+          </div>
+          <div className="relative z-10">
+            {t.brand?.logoImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={t.brand.logoImage as string} alt={t.name} className="h-10 w-auto" />
+            ) : (
+              <span className="text-white font-black text-lg tracking-wide drop-shadow-sm">
+                {(t.brand?.logoText as string) ?? t.name}
+              </span>
+            )}
+          </div>
         </div>
 
-        {/* Logo */}
-        <div className="relative z-10">
-          {t.brand?.logoImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={t.brand.logoImage as string}
-              alt={t.name}
-              className="h-10 w-auto"
-            />
-          ) : (
-            <span className="text-white font-black text-lg tracking-wide drop-shadow-sm">
-              {(t.brand?.logoText as string) ?? t.name}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Card body */}
-      <div className="p-4">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="font-bold text-gray-900 truncate leading-tight">{t.name}</h3>
-          {t.require_login && (
-            <svg
-              className="w-3.5 h-3.5 text-gray-400 shrink-0 mt-0.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-          )}
-        </div>
-
-        <div className="mt-1 text-xs text-gray-400 font-mono">/sites/{t.slug}</div>
-
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 text-xs font-medium">
-            {categoryLabel}
-          </span>
-          {visitorCount > 0 && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 text-xs font-medium">
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        {/* Card body */}
+        <div className="p-4">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="font-bold text-gray-900 truncate leading-tight">{t.name}</h3>
+            {t.require_login && (
+              <svg className="w-3.5 h-3.5 text-gray-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
-              {visitorCount}
+            )}
+          </div>
+          <div className="mt-1 text-xs text-gray-400 font-mono">/sites/{t.slug}</div>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 text-xs font-medium">
+              {categoryLabel}
             </span>
-          )}
+            {visitorCount > 0 && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 text-xs font-medium">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                {visitorCount}
+              </span>
+            )}
+          </div>
         </div>
+      </Link>
+
+      {/* Card footer — actions (outside the Link so clicks don't navigate) */}
+      <div className="border-t border-gray-100 px-4 py-2 flex items-center justify-between">
+        <Link
+          href={`/sites/${t.slug}`}
+          target="_blank"
+          className="text-[11px] text-gray-400 hover:text-blue-600 font-medium flex items-center gap-1"
+        >
+          Preview
+          <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+        </Link>
+        <SiteCardActions id={t.id} slug={t.slug} name={t.name} />
       </div>
-    </Link>
+    </div>
   )
 }
 
