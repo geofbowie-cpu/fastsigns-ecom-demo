@@ -59,6 +59,7 @@ export default function EditSiteForm({
   const [productOverrides, setProductOverrides] = useState<ProductOverrides>(
     (tenant.product_overrides as ProductOverrides) ?? {}
   )
+  const [theme, setTheme] = useState<"legacy" | "v2">(tenant.theme ?? "legacy")
   // Status
   const [status, setStatus] = useState<"demo" | "live">(tenant.status ?? "demo")
   const [contactName, setContactName] = useState((tenant.brand?.contactName as string) ?? "")
@@ -248,6 +249,7 @@ export default function EditSiteForm({
           product_overrides: productOverrides,
           admin_email: adminEmail || null,
           require_login: requireLogin,
+          theme,
           allowed_domains: allowedDomains
             .split(",")
             .map((d) => d.trim().toLowerCase().replace(/^@/, ""))
@@ -633,6 +635,33 @@ export default function EditSiteForm({
           brandPrimaryColor={primaryColor}
           brandCompanyName={name}
         />
+      </Section>
+
+      {/* Storefront theme */}
+      <Section title="Storefront design" hint="v2 is the new utility-first layout. Legacy is the current marketing-style design.">
+        <Field label="Theme">
+          <div className="flex items-center gap-1 p-0.5 bg-gray-100 rounded-lg w-fit">
+            {(["legacy", "v2"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTheme(t)}
+                className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                  theme === t
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {t === "v2" ? "✦ v2 — New design" : "Legacy"}
+              </button>
+            ))}
+          </div>
+          {theme === "v2" && (
+            <p className="text-[11px] text-blue-600 mt-1.5">
+              ✓ This site will render the new utility-first storefront design.
+            </p>
+          )}
+        </Field>
       </Section>
 
       {/* Status / promote */}

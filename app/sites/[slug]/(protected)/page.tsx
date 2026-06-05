@@ -55,6 +55,12 @@ export default async function TenantHomePage({
     Boolean
   )
 
+  // v2 theme guard — route to new design if opted in
+  if (tenant.theme === "v2") {
+    const { default: V2HomePage } = await import("./_v2/V2HomePage")
+    return <V2HomePage slug={slug} tenant={tenant} b={b} cats={cats} products={products} featured={featured} isAdmin={isAdmin} />
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Live contact bar */}

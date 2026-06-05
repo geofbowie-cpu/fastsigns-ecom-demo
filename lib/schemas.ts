@@ -20,6 +20,7 @@ export const TenantPatchSchema = z.object({
   allowed_domains: z.array(z.string()).optional(),
   require_login: z.boolean().optional(),
   archived: z.boolean().optional(),
+  theme: z.enum(["legacy", "v2"]).optional(),
 })
 
 // ── Categories ───────────────────────────────────────────────
