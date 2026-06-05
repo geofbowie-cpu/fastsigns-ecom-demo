@@ -226,20 +226,72 @@ function AnnouncementBanner({
   b: ResolvedBrand
   slug: string
 }) {
-  if (!b.heroCta1Text) return null
-  const href = b.heroCta1Url.startsWith("http")
+  const cta1Href = b.heroCta1Url?.startsWith("http")
     ? b.heroCta1Url
-    : `/sites/${slug}/${b.heroCta1Url}`
+    : `/sites/${slug}/${b.heroCta1Url ?? "products"}`
+  const cta2Href = b.heroCta2Text
+    ? (b.heroCta2Url?.startsWith("http") ? b.heroCta2Url : `/sites/${slug}/${b.heroCta2Url ?? "products"}`)
+    : null
+
   return (
-    <Link
-      href={href}
-      className="block h-16 flex items-center justify-center text-sm font-semibold text-white text-center px-4 hover:opacity-90 transition-opacity"
-      style={{ backgroundColor: b.primaryColor }}
-    >
-      <span className="mr-2">🎯</span>
-      {b.heroCta1Text}
-      <span className="ml-2">→</span>
-    </Link>
+    <div className="relative w-full overflow-hidden" style={{ height: "320px" }}>
+      {/* Background — image if available, otherwise brand gradient */}
+      {b.heroBgImage ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={b.heroBgImage}
+          alt=""
+          aria-hidden
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+          style={{ objectPosition: `${b.heroBgPosition?.x ?? 50}% ${b.heroBgPosition?.y ?? 50}%` }}
+        />
+      ) : (
+        <div
+          className="absolute inset-0"
+          style={{ background: `linear-gradient(135deg, ${b.heroGradientFrom ?? b.primaryColor} 0%, ${b.heroGradientTo ?? b.primaryColor} 100%)` }}
+        />
+      )}
+
+      {/* Overlay */}
+      <div
+        className="absolute inset-0"
+        style={{ backgroundColor: `rgba(0,0,0,${b.heroBgOverlay ?? 0.45})` }}
+      />
+
+      {/* Content */}
+      <div className="relative z-10 h-full flex flex-col justify-center px-8 md:px-16 max-w-3xl">
+        {b.heroHeading && (
+          <h2 className="font-display text-2xl md:text-3xl font-bold text-white leading-tight mb-2 drop-shadow-sm">
+            {b.heroHeading}
+          </h2>
+        )}
+        {b.heroSubheading && (
+          <p className="text-sm md:text-base text-white/80 mb-5 max-w-xl line-clamp-2">
+            {b.heroSubheading}
+          </p>
+        )}
+        <div className="flex flex-wrap gap-3">
+          {b.heroCta1Text && (
+            <Link
+              href={cta1Href}
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 text-sm font-semibold rounded-pill hover:opacity-90 transition-opacity"
+              style={{ backgroundColor: b.heroCta1Color ?? b.buttonColor, color: b.heroCta1TextColor ?? b.buttonTextColor }}
+            >
+              {b.heroCta1Text}{b.heroCta1Icon ? ` ${b.heroCta1Icon}` : ""}
+            </Link>
+          )}
+          {cta2Href && b.heroCta2Text && (
+            <Link
+              href={cta2Href}
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 text-sm font-semibold rounded-pill hover:opacity-90 transition-opacity border border-white/40 text-white"
+              style={b.heroCta2Color ? { backgroundColor: b.heroCta2Color, color: b.heroCta2TextColor } : { backgroundColor: "rgba(255,255,255,0.12)" }}
+            >
+              {b.heroCta2Text}{b.heroCta2Icon ? ` ${b.heroCta2Icon}` : ""}
+            </Link>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
 
