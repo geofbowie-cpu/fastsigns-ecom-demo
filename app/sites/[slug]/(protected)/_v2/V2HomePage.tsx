@@ -234,7 +234,7 @@ function AnnouncementBanner({
     : null
 
   return (
-    <div className="relative w-full overflow-hidden" style={{ height: "320px" }}>
+    <div className="relative w-full overflow-hidden h-80">{/* h-80 = 320px */}
       {/* Background — image if available, otherwise brand gradient */}
       {b.heroBgImage ? (
         // eslint-disable-next-line @next/next/no-img-element
