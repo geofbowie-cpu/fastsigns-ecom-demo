@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter, useSearchParams } from "next/navigation"
-import { useCallback, useRef } from "react"
+import { useCallback, useRef, useTransition } from "react"
 
 export default function V2SearchBox({
   slug,
@@ -15,6 +15,7 @@ export default function V2SearchBox({
   const router = useRouter()
   const searchParams = useSearchParams()
   const inputRef = useRef<HTMLInputElement>(null)
+  const [, startTransition] = useTransition()
 
   const push = useCallback(
     (q: string) => {
@@ -24,8 +25,11 @@ export default function V2SearchBox({
       } else {
         params.delete("q")
       }
-      // keep active category if present
-      router.push(`/sites/${slug}/products?${params.toString()}`)
+      // replace + startTransition keeps the input focused while the server
+      // re-renders the page — same pattern as the working SearchInput component
+      startTransition(() => {
+        router.replace(`/sites/${slug}/products?${params.toString()}`)
+      })
     },
     [router, searchParams, slug]
   )
@@ -36,7 +40,6 @@ export default function V2SearchBox({
   }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    // debounce-free: push on every change for instant URL-driven filtering
     push(e.target.value)
   }
 
