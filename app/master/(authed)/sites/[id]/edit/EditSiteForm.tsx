@@ -85,6 +85,9 @@ export default function EditSiteForm({
   const [headerBgColor, setHeaderBgColor] = useState(
     (tenant.brand?.headerBgColor as string) ?? primaryColor
   )
+  const [logoHeight, setLogoHeight] = useState(
+    (tenant.brand?.logoHeight as number) ?? 32
+  )
   const [heroCta1TextColor, setHeroCta1TextColor] = useState(
     (tenant.brand?.heroCta1TextColor as string) ?? "#000000"
   )
@@ -197,6 +200,7 @@ export default function EditSiteForm({
         accentColor,
         navTextColor,
         headerBgColor,
+        logoHeight,
         buttonColor,
         buttonTextColor,
         heroCta1Color: buttonColor,
@@ -442,6 +446,19 @@ export default function EditSiteForm({
             slug={tenant.slug} kind="logo"
             previewAspect="3/1" maxPreviewHeight={72}
           />
+          <div className="mt-2 flex items-center gap-3">
+            <span className="text-[11px] text-gray-400 shrink-0">Size</span>
+            <input
+              type="range"
+              min={20}
+              max={80}
+              step={2}
+              value={logoHeight}
+              onChange={(e) => setLogoHeight(Number(e.target.value))}
+              className="flex-1 accent-blue-600"
+            />
+            <span className="text-[11px] text-gray-500 font-mono w-10 text-right">{logoHeight}px</span>
+          </div>
         </Field>
         <Field label="Hero heading">
           <input value={heroHeading} onChange={(e) => setHeroHeading(e.target.value)} className={inputCls} />

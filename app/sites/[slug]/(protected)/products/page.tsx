@@ -95,7 +95,7 @@ export default async function TenantProductsPage({
           <Link href={`/sites/${slug}`} className="flex items-center gap-2">
             {b.logoImage ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={b.logoImage} alt={b.company} className="h-8 w-auto" />
+              <img src={b.logoImage} alt={b.company} style={{ height: b.logoHeight }} className="w-auto" />
             ) : (
               <span className="text-white font-black tracking-wide text-lg">{b.logoText}</span>
             )}

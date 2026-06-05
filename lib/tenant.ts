@@ -18,6 +18,7 @@ export type TenantBrand = {
   accentDark?: string
   navTextColor?: string
   headerBgColor?: string
+  logoHeight?: number
   heroCta1TextColor?: string
   // Hero
   heroHeading?: string
