@@ -43,6 +43,16 @@ export default async function ProductDetailPage({
     .filter((p) => p.category === product.category && p.slug !== product.slug)
     .slice(0, 3)
 
+  // v2 theme guard
+  if (tenant.theme === "v2") {
+    const isLive = tenant.status === "live"
+    const mailSubject = encodeURIComponent(`Order inquiry: ${product.name}`)
+    const ctaEmail = b.contactEmail || b.supportEmail
+    const mailHref = `mailto:${ctaEmail}?subject=${mailSubject}`
+    const { default: V2ProductDetailPage } = await import("./_v2/V2ProductDetailPage")
+    return <V2ProductDetailPage slug={slug} tenant={tenant} b={b} product={product} category={category} related={related} cats={cats} isAdmin={isAdmin} isLive={isLive} mailHref={mailHref} />
+  }
+
   const isLive = tenant.status === "live"
   const mailSubject = encodeURIComponent(`Order inquiry: ${product.name}`)
   // Fall back to supportEmail if the tenant has no contactEmail. supportEmail

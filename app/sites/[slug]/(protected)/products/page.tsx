@@ -63,6 +63,12 @@ export default async function TenantProductsPage({
     return matchCat && matchQ
   })
 
+  // v2 theme guard
+  if (tenant.theme === "v2") {
+    const { default: V2ProductsPage } = await import("./_v2/V2ProductsPage")
+    return <V2ProductsPage slug={slug} tenant={tenant} b={b} cats={cats} all={all} filtered={filtered} category={category} q={q} isAdmin={isAdmin} />
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {tenant.status === "live" && b.contactEmail && (
