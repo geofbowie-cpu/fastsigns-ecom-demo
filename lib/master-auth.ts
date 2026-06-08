@@ -74,3 +74,18 @@ export async function isMasterAuthed(): Promise<boolean> {
   const c = await cookies()
   return verifyToken(c.get(COOKIE_NAME)?.value)
 }
+
+const EMAIL_COOKIE_NAME = "ecom_master_email"
+
+/** Use in Server Actions / layouts — sets both the HMAC token and email cookies */
+export async function startMasterSessionForEmail(email: string): Promise<void> {
+  const c = await cookies()
+  c.set(COOKIE_NAME, makeToken(), COOKIE_OPTIONS)
+  c.set(EMAIL_COOKIE_NAME, email, COOKIE_OPTIONS)
+}
+
+/** Reads the master admin email from its cookie. Server-only. */
+export async function getMasterEmail(): Promise<string | null> {
+  const c = await cookies()
+  return c.get(EMAIL_COOKIE_NAME)?.value ?? null
+}
