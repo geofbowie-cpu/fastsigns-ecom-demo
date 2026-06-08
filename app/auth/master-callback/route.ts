@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await authAdminClient().auth.verifyOtp({
     token_hash: tokenHash,
-    type: type as "email",
+    type: type as "magiclink" | "email",
   })
 
   if (error || !data.user?.email) {
