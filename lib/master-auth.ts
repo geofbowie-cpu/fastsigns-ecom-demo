@@ -39,25 +39,12 @@ function verifyToken(token: string | undefined): boolean {
   return Date.now() - issued < COOKIE_MAX_AGE_SECONDS * 1000
 }
 
-export function checkMasterPassword(password: string): boolean {
-  const expected = process.env.MASTER_ADMIN_PASSWORD
-  if (!expected) return false
-  if (password.length !== expected.length) return false
-  return timingSafeEqual(Buffer.from(password), Buffer.from(expected))
-}
-
 const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: "lax" as const,
   path: "/",
   maxAge: COOKIE_MAX_AGE_SECONDS,
-}
-
-/** Use in Server Actions / layouts (next/headers) */
-export async function startMasterSession(): Promise<void> {
-  const c = await cookies()
-  c.set(COOKIE_NAME, makeToken(), COOKIE_OPTIONS)
 }
 
 /** Use in Route Handlers — writes the cookie onto an existing NextResponse */
