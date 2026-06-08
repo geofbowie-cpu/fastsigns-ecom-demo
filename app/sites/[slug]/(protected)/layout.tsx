@@ -5,6 +5,8 @@ import { getTenantBySlug } from "@/lib/tenant"
 import { getTenantSession, cookieName } from "@/lib/tenant-auth"
 import { isMasterAuthed } from "@/lib/master-auth"
 import { resolveBrand } from "@/lib/resolve-brand"
+import CartProvider from "./_cart/CartProvider"
+import CartButton from "./_cart/CartButton"
 
 export async function generateMetadata({
   params,
@@ -36,9 +38,21 @@ export default async function ProtectedSiteLayout({
   // No tenant = let the page handle notFound
   if (!tenant) return <>{children}</>
 
+  const b = resolveBrand(tenant.brand)
+
+  // Cart/ordering is a per-site opt-in (off by default, incl. Reddy Ice).
+  const content = tenant.enable_cart ? (
+    <CartProvider slug={slug}>
+      {children}
+      <CartButton slug={slug} buttonColor={b.buttonColor} buttonTextColor={b.buttonTextColor} />
+    </CartProvider>
+  ) : (
+    children
+  )
+
   const wrap = (
     <>
-      {children}
+      {content}
       {isDemo && <DemoBanner />}
     </>
   )

@@ -75,6 +75,7 @@ export default function EditSiteForm({
     (tenant.allowed_domains ?? []).join(", ")
   )
   const [requireLogin, setRequireLogin] = useState(tenant.require_login ?? false)
+  const [enableCart, setEnableCart] = useState(tenant.enable_cart ?? false)
   // Delete confirmation
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteSlugInput, setDeleteSlugInput] = useState("")
@@ -248,6 +249,7 @@ export default function EditSiteForm({
           product_overrides: productOverrides,
           admin_email: adminEmail || null,
           require_login: requireLogin,
+          enable_cart: enableCart,
           allowed_domains: allowedDomains
             .split(",")
             .map((d) => d.trim().toLowerCase().replace(/^@/, ""))
@@ -708,6 +710,37 @@ export default function EditSiteForm({
               className={inputCls}
             />
           </Field>
+        )}
+      </Section>
+
+      {/* Ordering / cart */}
+      <Section
+        title="Ordering"
+        hint="When on, live-site visitors can add products to an order and submit it. The order is emailed to the site's contact/rep. Customers must be signed in to submit."
+      >
+        <Field label="Enable cart & ordering">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={enableCart}
+              onClick={() => setEnableCart((v) => !v)}
+              className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
+                enableCart ? "bg-blue-600" : "bg-gray-300"
+              }`}
+            >
+              <span className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${enableCart ? "translate-x-4" : "translate-x-0"}`} />
+            </button>
+            <span className="text-xs text-gray-500">
+              {enableCart ? "On — visitors can build and submit orders" : "Off — no cart shown"}
+            </span>
+          </div>
+        </Field>
+        {enableCart && (
+          <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            Orders email to <strong>{tenant.brand?.contactEmail || tenant.brand?.supportEmail || "the site contact"}</strong>.
+            Set a contact email in the Brand section, and configure allowed domains under Access control so customers can sign in to submit.
+          </p>
         )}
       </Section>
 

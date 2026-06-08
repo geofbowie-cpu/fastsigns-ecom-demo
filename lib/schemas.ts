@@ -19,7 +19,24 @@ export const TenantPatchSchema = z.object({
   admin_email: z.string().email().nullable().optional(),
   allowed_domains: z.array(z.string()).optional(),
   require_login: z.boolean().optional(),
+  enable_cart: z.boolean().optional(),
   archived: z.boolean().optional(),
+})
+
+// ── Cart → purchase order ────────────────────────────────────
+export const CartSubmitSchema = z.object({
+  slug: z.string().min(1),
+  items: z
+    .array(
+      z.object({
+        slug: z.string().min(1),
+        name: z.string().min(1).max(200),
+        qty: z.number().int().min(1).max(9999),
+        note: z.string().max(1000).optional(),
+      })
+    )
+    .min(1, { message: "Your cart is empty." }),
+  orderNotes: z.string().max(2000).optional(),
 })
 
 // ── Categories ───────────────────────────────────────────────

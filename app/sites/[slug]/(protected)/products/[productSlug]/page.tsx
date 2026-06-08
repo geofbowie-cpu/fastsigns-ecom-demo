@@ -9,6 +9,7 @@ import { isMasterAuthed } from "@/lib/master-auth"
 import QuoteButton from "./_components/QuoteButton"
 import ProductViewTracker from "./_components/ProductViewTracker"
 import { PhoneLink, EmailLink } from "@/components/TrackableLink"
+import AddToCartButton from "../../_cart/AddToCartButton"
 
 export default async function ProductDetailPage({
   params,
@@ -222,6 +223,14 @@ export default async function ProductDetailPage({
 
             {/* CTA */}
             {isLive ? (
+              tenant.enable_cart ? (
+                <AddToCartButton
+                  slug={slug}
+                  product={{ slug: product.slug, name: product.name, imageUrl: product.imageUrl, unit: product.unit }}
+                  buttonColor={b.buttonColor}
+                  buttonTextColor={b.buttonTextColor}
+                />
+              ) : (
               <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
                 <div>
                   <h3 className="font-bold text-gray-900 text-lg">Ready to order?</h3>
@@ -252,6 +261,7 @@ export default async function ProductDetailPage({
                   </PhoneLink>
                 )}
               </div>
+              )
             ) : (
               <QuoteButton
                 tenantSlug={slug}

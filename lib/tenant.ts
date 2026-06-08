@@ -87,6 +87,7 @@ export type Tenant = {
   archived: boolean
   allowed_domains: string[]
   require_login: boolean
+  enable_cart: boolean
   created_at: string
   updated_at: string
 }
