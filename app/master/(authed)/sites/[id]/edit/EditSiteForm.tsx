@@ -10,6 +10,7 @@ import ImageUploader from "../../../_shared/ImageUploader"
 import MockupEditor from "./MockupEditor"
 import CategoryIcon from "@/components/CategoryIcon"
 import IconPicker from "../../../_shared/IconPicker"
+import UnsplashPicker from "../../../_shared/UnsplashPicker"
 
 // ── Dynamic Mockups types ──────────────────────────────────────
 type DmSmartObject = { uuid: string; name: string }
@@ -123,6 +124,8 @@ export default function EditSiteForm({
   const [siteProducts, setSiteProducts] = useState<DbProduct[]>(
     allProducts.filter((p) => p.import_tag === siteImportTag)
   )
+
+  const [showUnsplash, setShowUnsplash] = useState(false)
 
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -468,12 +471,30 @@ export default function EditSiteForm({
         <Field label="Hero subheading">
           <textarea value={heroSubheading} onChange={(e) => setHeroSubheading(e.target.value)} rows={2} className={inputCls} />
         </Field>
-        <Field label="Hero image" hint="Wide photo behind hero text">
+        <Field label="Hero image" hint="Wide photo behind hero text" wide>
           <ImageUploader
             value={heroBgImage} onChange={setHeroBgImage}
             slug={tenant.slug} kind="hero"
             previewAspect="21/9" maxPreviewHeight={110}
           />
+          <button
+            type="button"
+            onClick={() => setShowUnsplash(true)}
+            className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 border border-gray-200 hover:border-gray-400 bg-white px-3 py-1.5 rounded-lg transition-colors"
+          >
+            {/* Unsplash mark */}
+            <svg viewBox="0 0 32 32" className="w-3.5 h-3.5 shrink-0" fill="currentColor">
+              <path d="M10 9V0h12v9H10zm12 5h10v18H0V14h10v9h12v-9z" />
+            </svg>
+            Search Unsplash
+          </button>
+          {showUnsplash && (
+            <UnsplashPicker
+              defaultQuery={`${name} signage`}
+              onSelect={(url) => { setHeroBgImage(url); setShowUnsplash(false) }}
+              onClose={() => setShowUnsplash(false)}
+            />
+          )}
         </Field>
         <Field label="Trust badges" hint="✓ items below hero text — leave blank to hide">
           <div className="space-y-1.5">
