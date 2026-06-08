@@ -29,6 +29,11 @@ export function useCart(): CartContextValue {
   return ctx
 }
 
+/** Returns null when no CartProvider is mounted — safe to call without a provider. */
+export function useCartOptional(): CartContextValue | null {
+  return useContext(CartContext)
+}
+
 export default function CartProvider({
   slug,
   children,

@@ -8,6 +8,7 @@ import { resolveBrand } from "@/lib/resolve-brand"
 import { getProducts, getCategories } from "@/lib/products-db"
 import { isMasterAuthed } from "@/lib/master-auth"
 import SearchInput from "./SearchInput"
+import ProductCardActions from "./ProductCardActions"
 import CategoryIcon from "@/components/CategoryIcon"
 import { PhoneLink, EmailLink } from "@/components/TrackableLink"
 import type { ResolvedBrand } from "@/lib/resolve-brand"
@@ -231,49 +232,49 @@ function ProductCard({
   tenant: Tenant
 }) {
   return (
-    <Link
-      href={`/sites/${slug}/products/${p.slug}`}
-      className="group bg-white border border-gray-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow"
-    >
-      {p.imageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={p.imageUrl}
-          alt={p.name}
-          className="h-36 w-full object-cover group-hover:scale-[1.02] transition-transform"
-        />
-      ) : (
-        <div
-          className="h-36 flex items-center justify-center"
-          style={{
-            background: `linear-gradient(135deg, ${p.gradientFrom} 0%, ${p.gradientTo} 100%)`,
-          }}
-        >
-          <svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 text-white/70">
-            <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
-            <path d="M3 16l5-5 4 4 3-3 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
-      )}
-      <div className="p-4">
-        <h3 className="font-bold text-gray-900 text-sm group-hover:underline">{p.name}</h3>
-        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{p.shortDesc}</p>
-        {b.showPricing && tenant.status !== "live" && (
-          <div className="mt-3 flex items-baseline gap-1">
-            <span className="text-xs text-gray-500">from</span>
-            <span className="font-bold text-gray-900">${p.startingPrice}</span>
-            <span className="text-xs text-gray-500">/ {p.unit}</span>
-          </div>
-        )}
-        {tenant.status === "live" && (
+    <div className="group bg-white border border-gray-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow flex flex-col">
+      {/* Clickable image + info section */}
+      <Link href={`/sites/${slug}/products/${p.slug}`} className="block flex-1">
+        {p.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={p.imageUrl}
+            alt={p.name}
+            className="h-36 w-full object-cover group-hover:scale-[1.02] transition-transform"
+          />
+        ) : (
           <div
-            className="mt-3 inline-flex items-center gap-1 text-xs font-semibold"
-            style={{ color: b.primaryColor }}
+            className="h-36 flex items-center justify-center"
+            style={{
+              background: `linear-gradient(135deg, ${p.gradientFrom} 0%, ${p.gradientTo} 100%)`,
+            }}
           >
-            {b.orderCtaText} →
+            <svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 text-white/70">
+              <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M3 16l5-5 4 4 3-3 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </div>
         )}
-      </div>
-    </Link>
+        <div className="p-4 pb-2">
+          <h3 className="font-bold text-gray-900 text-sm group-hover:underline">{p.name}</h3>
+          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{p.shortDesc}</p>
+          {b.showPricing && tenant.status !== "live" && p.startingPrice > 0 && (
+            <div className="mt-2 flex items-baseline gap-1">
+              <span className="text-xs text-gray-500">from</span>
+              <span className="font-bold text-gray-900">${p.startingPrice}</span>
+              <span className="text-xs text-gray-500">/ {p.unit}</span>
+            </div>
+          )}
+        </div>
+      </Link>
+
+      {/* Action bar — Details + optional cart controls */}
+      <ProductCardActions
+        tenantSlug={slug}
+        product={{ slug: p.slug, name: p.name, imageUrl: p.imageUrl, unit: p.unit }}
+        buttonColor={b.buttonColor}
+        buttonTextColor={b.buttonTextColor}
+      />
+    </div>
   )
 }
