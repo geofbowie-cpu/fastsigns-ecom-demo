@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getTenantBySlug } from "@/lib/tenant"
-import { authAnonClient } from "@/lib/supabase-auth"
+import { resolveBrand } from "@/lib/resolve-brand"
+import { sendMagicLink } from "@/lib/send-magic-link"
 
 export async function POST(req: Request) {
   let body: { email: string; slug: string }
@@ -12,7 +13,7 @@ export async function POST(req: Request) {
   const slug = body.slug?.trim().toLowerCase()
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return NextResponse.json({ error: "Valid email required" }, { status: 400 })
+    return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 })
   }
   if (!slug) return NextResponse.json({ error: "Slug required" }, { status: 400 })
 
@@ -21,7 +22,7 @@ export async function POST(req: Request) {
 
   const domains = tenant.allowed_domains ?? []
   if (domains.length === 0) {
-    return NextResponse.json({ error: "This site doesn't require sign-in" }, { status: 400 })
+    return NextResponse.json({ error: "This site doesn't require sign-in." }, { status: 400 })
   }
 
   const emailDomain = email.split("@")[1]
@@ -32,25 +33,19 @@ export async function POST(req: Request) {
     )
   }
 
-  // On Vercel preview deployments VERCEL_URL is the deployment-specific hostname
-  // (no protocol). On production SITE_URL is set explicitly.
-  const siteUrl = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : (process.env.SITE_URL ?? "http://localhost:3000")
+  const b = resolveBrand(tenant.brand)
 
-  // Use Supabase's own email delivery — no Resend needed.
-  // Supabase sends the magic link; after verification it redirects to our callback.
-  const { error } = await authAnonClient().auth.signInWithOtp({
+  const result = await sendMagicLink({
     email,
-    options: {
-      emailRedirectTo: `${siteUrl}/auth/tenant-callback?slug=${slug}`,
-      shouldCreateUser: true,
-    },
+    callbackPath: "/auth/tenant-callback",
+    callbackQuery: { slug },
+    siteName: b.company || tenant.name,
+    brandColor: b.primaryColor,
+    logoUrl: b.logoImage || undefined,
   })
 
-  if (error) {
-    console.error("signInWithOtp error:", error)
-    return NextResponse.json({ error: error.message ?? "Failed to send link" }, { status: 500 })
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.status })
   }
 
   return NextResponse.json({ ok: true })
