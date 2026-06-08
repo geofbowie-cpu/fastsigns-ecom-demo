@@ -7,9 +7,18 @@ import { authAdminClient } from "@/lib/supabase-auth"
 import { sendMagicLinkEmail, isEmailConfigured } from "@/lib/email"
 
 export function siteBaseUrl(): string {
-  return process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : process.env.SITE_URL ?? "http://localhost:3000"
+  // Production: use the canonical SITE_URL (stable domain), not the per-deploy
+  // Vercel hostname.
+  if (process.env.VERCEL_ENV === "production" && process.env.SITE_URL) {
+    return process.env.SITE_URL
+  }
+  // Preview deployments: the deployment-specific hostname so links resolve to
+  // the preview the user is actually testing.
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`
+  }
+  // Local dev.
+  return process.env.SITE_URL ?? "http://localhost:3000"
 }
 
 type Result = { ok: true } | { ok: false; status: number; error: string }
