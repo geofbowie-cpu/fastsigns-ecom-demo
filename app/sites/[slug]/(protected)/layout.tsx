@@ -55,12 +55,12 @@ export default async function ProtectedSiteLayout({
   const raw = store.get(cookieName(slug))?.value
   const email = getTenantSession(slug, raw)
 
-  if (!email) redirect(`/${slug}/login`)
+  if (!email) redirect(`/sites/${slug}/login`)
 
   // If the user's email domain isn't in the allowlist, reject
   if (domains.length > 0) {
     const userDomain = email.split("@")[1]?.toLowerCase()
-    if (!domains.includes(userDomain)) redirect(`/${slug}/login`)
+    if (!domains.includes(userDomain)) redirect(`/sites/${slug}/login`)
   }
 
   return wrap
