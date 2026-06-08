@@ -32,7 +32,11 @@ export async function POST(req: Request) {
     )
   }
 
-  const siteUrl = process.env.SITE_URL ?? "http://localhost:3000"
+  // On Vercel preview deployments VERCEL_URL is the deployment-specific hostname
+  // (no protocol). On production SITE_URL is set explicitly.
+  const siteUrl = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : (process.env.SITE_URL ?? "http://localhost:3000")
 
   // Use Supabase's own email delivery — no Resend needed.
   // Supabase sends the magic link; after verification it redirects to our callback.
