@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({ access_token: token, slug: slug })
   }).then(function(r){
-    location.replace(r.ok ? '/' + slug : '/' + slug + '/login?error=auth_failed');
+    location.replace(r.ok ? '/sites/' + slug : '/sites/' + slug + '/login?error=auth_failed');
   });
 })();
 </script>
@@ -47,13 +47,13 @@ export async function GET(req: NextRequest) {
 
   if (error || !data.user?.email) {
     console.error("tenant verifyOtp error:", error)
-    return NextResponse.redirect(`${origin}/${slug}/login?error=invalid_link`)
+    return NextResponse.redirect(`${origin}/sites/${slug}/login?error=invalid_link`)
   }
 
   const email = data.user.email.toLowerCase()
   await logVisitor(slug, email)
 
-  const res = NextResponse.redirect(`${origin}/${slug}`)
+  const res = NextResponse.redirect(`${origin}/sites/${slug}`)
   setTenantSessionOnResponse(res, slug, email)
   return res
 }
