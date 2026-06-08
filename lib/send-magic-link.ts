@@ -75,7 +75,12 @@ export async function sendMagicLink(opts: {
 
   if (!sent.ok) {
     console.error("sendMagicLinkEmail error:", sent.error)
-    return { ok: false, status: 500, error: "Couldn't send the email. Try again in a moment." }
+    // Surface Resend's actual error in non-production so it's diagnosable.
+    const isDev = process.env.VERCEL_ENV !== "production" && !process.env.VERCEL_URL
+    const userMessage = isDev
+      ? `Email delivery failed: ${sent.error}`
+      : "Couldn't send the email. Try again in a moment."
+    return { ok: false, status: 500, error: userMessage }
   }
 
   return { ok: true }
