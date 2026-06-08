@@ -18,22 +18,10 @@ export async function POST(req: Request) {
   if (!tenant) return apiError("Site not found", 404)
   if (!tenant.enable_cart) return apiError("Ordering isn't enabled for this site.", 400)
 
-  // Must be signed in (cart is a logged-in function).
+  // Auth is optional for now (testing mode). Use session email when available.
   const store = await cookies()
   const raw = store.get(cookieName(slug))?.value
-  const customerEmail = getTenantSession(slug, raw)
-  if (!customerEmail) {
-    return apiError("Please sign in to submit your order.", 401)
-  }
-
-  // Belt-and-suspenders domain check (the session already enforced this).
-  const domains = tenant.allowed_domains ?? []
-  if (domains.length > 0) {
-    const dom = customerEmail.split("@")[1]?.toLowerCase()
-    if (!domains.includes(dom)) {
-      return apiError("Your account isn't authorized to order on this site.", 403)
-    }
-  }
+  const customerEmail = getTenantSession(slug, raw) ?? "(not signed in)"
 
   const b = resolveBrand(tenant.brand)
   const repEmail = b.contactEmail || b.supportEmail

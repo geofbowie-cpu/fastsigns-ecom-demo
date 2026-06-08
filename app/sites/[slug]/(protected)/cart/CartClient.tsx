@@ -9,7 +9,6 @@ export default function CartClient({
   customerEmail,
   companyName,
   contactName,
-  primaryColor,
   buttonColor,
   buttonTextColor,
 }: {
@@ -17,7 +16,6 @@ export default function CartClient({
   customerEmail: string | null
   companyName: string
   contactName: string
-  primaryColor: string
   buttonColor: string
   buttonTextColor: string
 }) {
@@ -182,40 +180,27 @@ export default function CartClient({
         />
       </div>
 
-      {/* Submit / sign-in */}
-      {customerEmail ? (
-        <div className="bg-white rounded-xl border border-gray-100 p-5">
+      {/* Submit */}
+      <div className="bg-white rounded-xl border border-gray-100 p-5">
+        {customerEmail && (
           <p className="text-sm text-gray-500 mb-4">
             Submitting as <strong className="text-gray-900">{customerEmail}</strong>
           </p>
-          {error && (
-            <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-              {error}
-            </div>
-          )}
-          <button
-            onClick={submit}
-            disabled={busy}
-            className="w-full py-3.5 rounded-xl font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
-            style={{ backgroundColor: buttonColor, color: buttonTextColor }}
-          >
-            {busy ? "Submitting…" : "Submit order"}
-          </button>
-        </div>
-      ) : (
-        <div className="bg-white rounded-xl border border-gray-100 p-5 text-center">
-          <p className="text-sm text-gray-600 mb-4">
-            Sign in to submit your order. Your items are saved and will be here when you return.
-          </p>
-          <Link
-            href={`/sites/${slug}/login`}
-            className="inline-flex items-center justify-center w-full py-3.5 rounded-xl font-bold text-sm hover:opacity-90 transition-opacity"
-            style={{ backgroundColor: primaryColor, color: "#ffffff" }}
-          >
-            Sign in to submit
-          </Link>
-        </div>
-      )}
+        )}
+        {error && (
+          <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            {error}
+          </div>
+        )}
+        <button
+          onClick={submit}
+          disabled={busy}
+          className="w-full py-3.5 rounded-xl font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+          style={{ backgroundColor: buttonColor, color: buttonTextColor }}
+        >
+          {busy ? "Submitting…" : "Submit order"}
+        </button>
+      </div>
     </div>
   )
 }

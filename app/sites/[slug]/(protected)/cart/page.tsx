@@ -48,7 +48,6 @@ export default async function CartPage({
         customerEmail={customerEmail}
         companyName={b.company}
         contactName={b.contactName}
-        primaryColor={b.primaryColor}
         buttonColor={b.buttonColor}
         buttonTextColor={b.buttonTextColor}
       />
