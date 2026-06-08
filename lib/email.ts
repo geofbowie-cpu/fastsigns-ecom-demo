@@ -3,6 +3,7 @@
 // built-in delivery (rate-limited to a few per hour, poor inbox placement).
 
 import { Resend } from "resend"
+import { siteBaseUrl } from "./send-magic-link"
 
 const FROM = process.env.EMAIL_FROM ?? "onboarding@resend.dev"
 
@@ -103,7 +104,8 @@ export async function sendPurchaseOrderEmail(opts: {
   reference: string
   companyName: string
   customerEmail: string
-  items: { name: string; qty: number; note?: string }[]
+  tenantSlug?: string
+  items: { slug?: string; name: string; qty: number; note?: string }[]
   orderNotes?: string
   brandColor?: string
 }): Promise<SendResult> {
@@ -113,15 +115,23 @@ export async function sendPurchaseOrderEmail(opts: {
   const color = opts.brandColor || "#1e3a5f"
   const company = escapeHtml(opts.companyName)
 
+  const base = siteBaseUrl()
   const rows = opts.items
-    .map(
-      (it) => `
+    .map((it) => {
+      const productUrl =
+        opts.tenantSlug && it.slug
+          ? `${base}/sites/${opts.tenantSlug}/products/${it.slug}`
+          : null
+      const nameCell = productUrl
+        ? `<a href="${productUrl}" style="color:${color};font-weight:600;text-decoration:none;" target="_blank">${escapeHtml(it.name)}</a>`
+        : escapeHtml(it.name)
+      return `
       <tr>
-        <td style="padding:10px 12px;border-bottom:1px solid #eef0f2;font-size:14px;color:#111827;">${escapeHtml(it.name)}</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #eef0f2;font-size:14px;color:#111827;">${nameCell}</td>
         <td style="padding:10px 12px;border-bottom:1px solid #eef0f2;font-size:14px;color:#111827;text-align:center;font-weight:700;">${it.qty}</td>
         <td style="padding:10px 12px;border-bottom:1px solid #eef0f2;font-size:13px;color:#6b7280;">${it.note ? escapeHtml(it.note) : "—"}</td>
       </tr>`
-    )
+    })
     .join("")
 
   const notesBlock = opts.orderNotes

@@ -53,7 +53,8 @@ export async function POST(req: Request) {
     reference,
     companyName: b.company,
     customerEmail,
-    items: items.map((i) => ({ name: i.name, qty: i.qty, note: i.note })),
+    tenantSlug: slug,
+    items: items.map((i) => ({ slug: i.slug, name: i.name, qty: i.qty, note: i.note })),
     orderNotes,
     brandColor: b.primaryColor,
   })
