@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { adminClient } from "@/lib/supabase"
-import { startMasterSessionForEmail } from "@/lib/master-auth"
+import { setMasterSessionOnResponse } from "@/lib/master-auth"
 import { verifyPassword } from "@/lib/password"
 import { apiError } from "@/lib/api-helpers"
 
@@ -39,6 +39,14 @@ export async function POST(req: Request) {
     .update({ last_sign_in_at: new Date().toISOString() })
     .eq("email", email)
 
-  await startMasterSessionForEmail(email)
-  return NextResponse.json({ ok: true })
+  const res = NextResponse.json({ ok: true })
+  setMasterSessionOnResponse(res)
+  res.cookies.set("ecom_master_email", email, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7,
+  })
+  return res
 }
