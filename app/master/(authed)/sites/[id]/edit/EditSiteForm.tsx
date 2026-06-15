@@ -316,7 +316,24 @@ export default function EditSiteForm({
   }
 
   return (
-    <form onSubmit={save} className="max-w-2xl space-y-4">
+    <form onSubmit={save} className="max-w-2xl space-y-6">
+      {/* Jump nav */}
+      <nav className="sticky top-0 z-10 -mx-1 flex flex-wrap gap-1 bg-white/90 backdrop-blur-sm py-2 px-1 border-b border-gray-100">
+        {[
+          "Identity", "Brand", "Footer",
+          "Categories", "Custom products", "Product overrides",
+          "Storefront design", "Live portal", "Access control", "Ordering",
+        ].map((s) => (
+          <a
+            key={s}
+            href={`#${s.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}`}
+            className="text-[11px] font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-100 px-2 py-1 rounded transition-colors whitespace-nowrap"
+          >
+            {s}
+          </a>
+        ))}
+      </nav>
+
       <Section title="Identity">
         <Field label="Display name">
           <input required value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
@@ -879,12 +896,15 @@ function Section({
   action?: React.ReactNode
   children: React.ReactNode
 }) {
+  const id = title.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")
   return (
-    <section>
-      <div className="flex items-center gap-3 mb-1.5 pb-1.5 border-b border-gray-100">
-        <h2 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider shrink-0">{title}</h2>
-        {hint && <p className="text-xs text-gray-400 truncate flex-1">{hint}</p>}
-        {action && <div className="ml-auto flex items-center gap-1.5">{action}</div>}
+    <section id={id} className="scroll-mt-6">
+      <div className="flex items-start gap-3 mb-3 pb-2 border-b-2 border-gray-200">
+        <div className="flex-1 min-w-0">
+          <h2 className="text-sm font-bold text-gray-800 tracking-tight">{title}</h2>
+          {hint && <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{hint}</p>}
+        </div>
+        {action && <div className="ml-auto flex items-center gap-1.5 shrink-0">{action}</div>}
       </div>
       <div>{children}</div>
     </section>
