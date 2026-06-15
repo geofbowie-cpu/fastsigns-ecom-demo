@@ -21,6 +21,7 @@ export const TenantPatchSchema = z.object({
   require_login: z.boolean().optional(),
   enable_cart: z.boolean().optional(),
   archived: z.boolean().optional(),
+  theme: z.enum(["legacy", "v2"]).optional(),
 })
 
 // ── Cart → purchase order ────────────────────────────────────

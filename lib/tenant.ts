@@ -88,6 +88,7 @@ export type Tenant = {
   allowed_domains: string[]
   require_login: boolean
   enable_cart: boolean
+  theme: "legacy" | "v2"
   created_at: string
   updated_at: string
 }
@@ -99,6 +100,7 @@ export type TenantInput = {
   enabled_categories?: string[]
   admin_email?: string | null
   require_login?: boolean
+  theme?: "legacy" | "v2"
 }
 
 // ─────────────────────────────────────────────────────────────

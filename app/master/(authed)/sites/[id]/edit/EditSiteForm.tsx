@@ -77,6 +77,7 @@ export default function EditSiteForm({
   )
   const [requireLogin, setRequireLogin] = useState(tenant.require_login ?? false)
   const [enableCart, setEnableCart] = useState(tenant.enable_cart ?? false)
+  const [theme, setTheme] = useState<"legacy" | "v2">(tenant.theme ?? "legacy")
   // Delete confirmation
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteSlugInput, setDeleteSlugInput] = useState("")
@@ -253,6 +254,7 @@ export default function EditSiteForm({
           admin_email: adminEmail || null,
           require_login: requireLogin,
           enable_cart: enableCart,
+          theme,
           allowed_domains: allowedDomains
             .split(",")
             .map((d) => d.trim().toLowerCase().replace(/^@/, ""))
@@ -656,6 +658,34 @@ export default function EditSiteForm({
           brandPrimaryColor={primaryColor}
           brandCompanyName={name}
         />
+      </Section>
+
+      {/* Storefront design */}
+      <Section
+        title="Storefront design"
+        hint="v2 is the new utility-first layout. Legacy is the current marketing-style design."
+      >
+        <div className="flex gap-3">
+          {(["legacy", "v2"] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTheme(t)}
+              className={`flex-1 py-2.5 rounded-lg border text-sm font-semibold transition-colors ${
+                theme === t
+                  ? "bg-gray-900 text-white border-gray-900"
+                  : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"
+              }`}
+            >
+              {t === "v2" ? "✦ v2 — New design" : "Legacy"}
+            </button>
+          ))}
+        </div>
+        {theme === "v2" && (
+          <p className="text-xs text-green-700 bg-green-50 border border-green-100 rounded-lg px-3 py-2 mt-2">
+            ✓ This site will render the new utility-first storefront design.
+          </p>
+        )}
       </Section>
 
       {/* Status / promote */}
