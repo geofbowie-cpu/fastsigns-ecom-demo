@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { getTenantBySlug } from "@/lib/tenant"
 import { resolveBrand } from "@/lib/resolve-brand"
 import { createOrder, orderReference, markOrderEmail } from "@/lib/orders-db"
-import { sendPurchaseOrderEmail } from "@/lib/email"
+import { sendPurchaseOrderEmail, sendOrderConfirmationEmail } from "@/lib/email"
 import { apiError, parseBody } from "@/lib/api-helpers"
 import { logger } from "@/lib/logger"
 import { CartSubmitSchema } from "@/lib/schemas"
@@ -71,6 +71,19 @@ export async function POST(req: Request) {
     // failure is logged for follow-up.
   } else {
     logger.info("cart.submit ok", { slug, reference, items: items.length })
+  }
+
+  // Confirmation to the customer (best-effort — never blocks the order).
+  const confirm = await sendOrderConfirmationEmail({
+    to: contact.email,
+    firstName: contact.firstName,
+    repName: b.contactName,
+    repEmail,
+    reference,
+    items: items.map((i) => ({ name: i.name, qty: i.qty })),
+  })
+  if (!confirm.ok) {
+    logger.error("cart.submit confirmation failed", { slug, reference, error: confirm.error })
   }
 
   return NextResponse.json({ ok: true, reference })

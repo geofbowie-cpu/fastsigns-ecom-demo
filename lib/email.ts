@@ -228,6 +228,109 @@ export async function sendPurchaseOrderEmail(opts: {
   }
 }
 
+/**
+ * Confirmation email sent to the person who placed the order. Plain, friendly,
+ * the kind of autoresponder a normal order form sends — thanks them and tells
+ * them their named rep at FASTSIGNS Ely will follow up with a quote.
+ */
+export async function sendOrderConfirmationEmail(opts: {
+  to: string
+  firstName: string
+  repName?: string
+  repEmail?: string
+  reference: string
+  items: { name: string; qty: number }[]
+}): Promise<SendResult> {
+  const resend = client()
+  if (!resend) return { ok: false, error: "Email is not configured (missing RESEND_API_KEY)." }
+
+  const first = escapeHtml(opts.firstName.trim() || "there")
+  const rep = opts.repName?.trim()
+  const repSafe = rep ? escapeHtml(rep) : ""
+  const ref = escapeHtml(opts.reference)
+
+  const repSentence = rep
+    ? `${repSafe} at FASTSIGNS Ely has your order and will get right back to you with a quote, usually within one business day.`
+    : `Your rep at FASTSIGNS Ely has your order and will get right back to you with a quote, usually within one business day.`
+  const signoff = rep ? repSafe : "The FASTSIGNS Ely team"
+
+  const itemRows = opts.items
+    .map(
+      (it) =>
+        `<tr>
+          <td style="padding:8px 0;font-size:14px;color:#111827;border-bottom:1px solid #f0f1f3;">${escapeHtml(it.name)}</td>
+          <td style="padding:8px 0;font-size:14px;color:#6b7280;text-align:right;border-bottom:1px solid #f0f1f3;">Qty ${it.qty}</td>
+        </tr>`
+    )
+    .join("")
+
+  const html = `<!doctype html>
+<html>
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 16px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb;">
+        <tr><td style="padding:28px 28px 8px;">
+          <p style="margin:0 0 16px;font-size:15px;color:#111827;">Hi ${first},</p>
+          <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#111827;">
+            Thanks for your order! ${repSentence}
+          </p>
+          <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#111827;">
+            Your reference number is <strong>${ref}</strong>.
+          </p>
+        </td></tr>
+        <tr><td style="padding:0 28px;">
+          <div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">What you ordered</div>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${itemRows}</table>
+        </td></tr>
+        <tr><td style="padding:20px 28px 28px;">
+          <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#6b7280;">
+            Need to change something or have a question? Just reply to this email${rep ? ` and it will go straight to ${repSafe}` : ""}.
+          </p>
+          <p style="margin:0;font-size:15px;color:#111827;">Thanks,<br/>${signoff}<br/><span style="color:#6b7280;">FASTSIGNS Ely</span></p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+
+  const itemsText = opts.items.map((it) => `  - ${it.name} (Qty ${it.qty})`).join("\n")
+  const text = `Hi ${opts.firstName.trim() || "there"},
+
+Thanks for your order! ${rep ? `${rep} at FASTSIGNS Ely` : "Your rep at FASTSIGNS Ely"} has your order and will get right back to you with a quote, usually within one business day.
+
+Your reference number is ${opts.reference}.
+
+What you ordered:
+${itemsText}
+
+Need to change something or have a question? Just reply to this email.
+
+Thanks,
+${rep || "The FASTSIGNS Ely team"}
+FASTSIGNS Ely`
+
+  // Bare address from FROM (which may be "Name <addr>" or just "addr").
+  const bareFrom = FROM.includes("<") ? FROM.replace(/^.*<([^>]+)>.*$/, "$1") : FROM
+
+  try {
+    const { error } = await resend.emails.send({
+      from: `FASTSIGNS Ely <${bareFrom}>`,
+      to: opts.to,
+      // Replies go to the rep so the customer reaches a human.
+      ...(opts.repEmail && isValidEmail(opts.repEmail) ? { replyTo: opts.repEmail } : {}),
+      subject: `Thanks for your order (${opts.reference})`,
+      html,
+      text,
+    })
+    if (error) return { ok: false, error: error.message }
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Failed to send email" }
+  }
+}
+
 /** Minimal RFC-ish email check — enough to keep junk out of to/replyTo/bcc. */
 function isValidEmail(s: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim())
