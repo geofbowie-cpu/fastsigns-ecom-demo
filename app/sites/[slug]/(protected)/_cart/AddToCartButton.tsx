@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useCart } from "./CartProvider"
+import { effectiveMin, effectiveStep, normalizeQty, minLabel } from "@/lib/order-qty"
 
 export default function AddToCartButton({
   slug,
@@ -11,12 +12,15 @@ export default function AddToCartButton({
   buttonTextColor,
 }: {
   slug: string
-  product: { slug: string; name: string; imageUrl?: string; unit?: string }
+  product: { slug: string; name: string; imageUrl?: string; unit?: string; minOrderQty?: number; orderIncrement?: number }
   buttonColor: string
   buttonTextColor: string
 }) {
   const { addItem } = useCart()
-  const [qty, setQty] = useState(1)
+  const min = effectiveMin(product.minOrderQty)
+  const step = effectiveStep(product.orderIncrement)
+  const hint = minLabel(product.minOrderQty, product.orderIncrement)
+  const [qty, setQty] = useState(min)
   const [note, setNote] = useState("")
   const [added, setAdded] = useState(false)
 
@@ -26,12 +30,14 @@ export default function AddToCartButton({
       name: product.name,
       imageUrl: product.imageUrl,
       unit: product.unit,
-      qty,
+      qty: normalizeQty(qty, product.minOrderQty, product.orderIncrement),
       note: note.trim() || undefined,
+      minQty: product.minOrderQty,
+      increment: product.orderIncrement,
     })
     setAdded(true)
     setNote("")
-    setQty(1)
+    setQty(min)
     setTimeout(() => setAdded(false), 4000)
   }
 
@@ -47,7 +53,7 @@ export default function AddToCartButton({
         <div className="inline-flex items-center border border-gray-300 rounded-lg overflow-hidden">
           <button
             type="button"
-            onClick={() => setQty((q) => Math.max(1, q - 1))}
+            onClick={() => setQty((q) => Math.max(min, q - step))}
             className="px-3 py-2 text-gray-600 hover:bg-gray-50 text-lg leading-none"
             aria-label="Decrease quantity"
           >
@@ -55,20 +61,23 @@ export default function AddToCartButton({
           </button>
           <input
             type="number"
-            min={1}
+            min={min}
+            step={step}
             value={qty}
-            onChange={(e) => setQty(Math.max(1, parseInt(e.target.value) || 1))}
+            onChange={(e) => setQty(Math.max(min, parseInt(e.target.value) || min))}
+            onBlur={() => setQty(normalizeQty(qty, product.minOrderQty, product.orderIncrement))}
             className="w-16 text-center text-sm py-2 outline-none border-x border-gray-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
           <button
             type="button"
-            onClick={() => setQty((q) => q + 1)}
+            onClick={() => setQty((q) => q + step)}
             className="px-3 py-2 text-gray-600 hover:bg-gray-50 text-lg leading-none"
             aria-label="Increase quantity"
           >
             +
           </button>
         </div>
+        {hint && <p className="text-xs text-gray-400 mt-1.5">{hint}</p>}
       </div>
 
       {/* Note */}

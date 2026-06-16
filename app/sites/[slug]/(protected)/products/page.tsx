@@ -276,7 +276,7 @@ function ProductCard({
       {/* Action bar — Details + optional cart controls */}
       <ProductCardActions
         tenantSlug={slug}
-        product={{ slug: p.slug, name: p.name, imageUrl: p.imageUrl, unit: p.unit }}
+        product={{ slug: p.slug, name: p.name, imageUrl: p.imageUrl, unit: p.unit, minOrderQty: p.minOrderQty, orderIncrement: p.orderIncrement }}
         buttonColor={b.buttonColor}
         buttonTextColor={b.buttonTextColor}
       />

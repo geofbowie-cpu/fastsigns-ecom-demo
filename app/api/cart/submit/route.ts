@@ -2,10 +2,12 @@ import { NextResponse } from "next/server"
 import { getTenantBySlug } from "@/lib/tenant"
 import { resolveBrand } from "@/lib/resolve-brand"
 import { createOrder, orderReference, markOrderEmail } from "@/lib/orders-db"
+import { getProducts } from "@/lib/products-db"
 import { sendPurchaseOrderEmail, sendOrderConfirmationEmail } from "@/lib/email"
 import { apiError, parseBody } from "@/lib/api-helpers"
 import { logger } from "@/lib/logger"
 import { CartSubmitSchema } from "@/lib/schemas"
+import { isValidQty, effectiveMin, effectiveStep } from "@/lib/order-qty"
 
 export async function POST(req: Request) {
   const result = CartSubmitSchema.safeParse(await parseBody(req))
@@ -19,6 +21,27 @@ export async function POST(req: Request) {
   // The submitter identity is the contact they provide on the cart form.
   // (Tenant session email, when present, is kept only for reference.)
   const customerEmail = contact.email
+
+  // Enforce vendor minimums / pack increments authoritatively (client can't bypass).
+  const products = await getProducts({
+    enabledCategories: tenant.enabled_categories,
+    importTags: tenant.import_tags,
+    overrides: tenant.product_overrides,
+  })
+  const productBySlug = new Map(products.map((p) => [p.slug, p]))
+  for (const it of items) {
+    const p = productBySlug.get(it.slug)
+    if (!p) continue // unknown product → no minimum to enforce
+    if (!isValidQty(it.qty, p.minOrderQty, p.orderIncrement)) {
+      const m = effectiveMin(p.minOrderQty)
+      const step = effectiveStep(p.orderIncrement)
+      const msg =
+        step > 1
+          ? `${p.name} must be ordered in packs of ${step} (minimum ${m}).`
+          : `${p.name} has a minimum order quantity of ${m}.`
+      return apiError(msg, 400)
+    }
+  }
 
   const b = resolveBrand(tenant.brand)
   const repEmail = b.contactEmail || b.supportEmail

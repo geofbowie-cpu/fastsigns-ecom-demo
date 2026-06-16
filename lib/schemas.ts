@@ -81,6 +81,8 @@ export const ProductUpsertSchema = z.object({
   image_url: z.string().url().nullable().optional(),
   import_tag: z.string().nullable().optional(),
   lead_time: z.string().max(100).optional(),
+  min_order_qty: z.number().int().min(1).max(1000000).nullable().optional(),
+  order_increment: z.number().int().min(1).max(1000000).nullable().optional(),
 })
 
 // ── Users ────────────────────────────────────────────────────

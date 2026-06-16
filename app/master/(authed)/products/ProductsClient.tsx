@@ -25,6 +25,8 @@ type ProductFormState = {
   image_url: string
   featured: boolean
   lead_time: string
+  min_order_qty: string
+  order_increment: string
 }
 
 function emptyForm(categories: BankCategory[]): ProductFormState {
@@ -39,6 +41,8 @@ function emptyForm(categories: BankCategory[]): ProductFormState {
     image_url: "",
     featured: false,
     lead_time: "",
+    min_order_qty: "",
+    order_increment: "",
   }
 }
 
@@ -80,6 +84,8 @@ function ProductForm({
         image_url: form.image_url.trim() || null,
         featured: form.featured,
         lead_time: form.lead_time.trim() || undefined,
+        min_order_qty: form.min_order_qty !== "" ? parseInt(form.min_order_qty) : null,
+        order_increment: form.order_increment !== "" ? parseInt(form.order_increment) : null,
       }
       const res = await fetch("/api/master/products", {
         method: "POST",
@@ -183,6 +189,35 @@ function ProductForm({
             value={form.lead_time}
             onChange={(e) => set("lead_time", e.target.value)}
             placeholder="3–5 business days"
+            className={inputCls}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1">
+            Minimum order qty <span className="font-normal text-gray-400">(optional)</span>
+          </label>
+          <input
+            type="number"
+            min={1}
+            value={form.min_order_qty}
+            onChange={(e) => set("min_order_qty", e.target.value)}
+            placeholder="e.g. 100"
+            className={inputCls}
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1">
+            Pack increment <span className="font-normal text-gray-400">(optional)</span>
+          </label>
+          <input
+            type="number"
+            min={1}
+            value={form.order_increment}
+            onChange={(e) => set("order_increment", e.target.value)}
+            placeholder="e.g. 100 (packs); blank = 1"
             className={inputCls}
           />
         </div>
@@ -298,6 +333,8 @@ function ProductRow({
     image_url: product.imageUrl ?? "",
     featured: product.featured ?? false,
     lead_time: product.leadTime ?? "",
+    min_order_qty: product.minOrderQty ? String(product.minOrderQty) : "",
+    order_increment: product.orderIncrement ? String(product.orderIncrement) : "",
   }
 
   if (editing) {

@@ -189,6 +189,8 @@ export type ProductUpsertRow = {
   lead_time?: string
   image_url?: string | null
   import_tag?: string | null
+  min_order_qty?: number | null
+  order_increment?: number | null
 }
 
 export async function upsertProducts(rows: ProductUpsertRow[]): Promise<{
@@ -282,6 +284,8 @@ function dbRowToProduct(r: any): BankProduct {
     tags: r.tags ?? [],
     leadTime: r.lead_time ?? "",
     imageUrl: r.image_url ?? undefined,
+    minOrderQty: r.min_order_qty ?? undefined,
+    orderIncrement: r.order_increment ?? undefined,
   }
 }
 

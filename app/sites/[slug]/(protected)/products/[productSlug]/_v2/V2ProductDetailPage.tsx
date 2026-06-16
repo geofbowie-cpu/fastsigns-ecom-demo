@@ -488,7 +488,7 @@ export default function V2ProductDetailPage({
             {tenant.enable_cart ? (
               <AddToCartButton
                 slug={slug}
-                product={{ slug: product.slug, name: product.name, imageUrl: product.imageUrl, unit: product.unit }}
+                product={{ slug: product.slug, name: product.name, imageUrl: product.imageUrl, unit: product.unit, minOrderQty: product.minOrderQty, orderIncrement: product.orderIncrement }}
                 buttonColor={b.buttonColor}
                 buttonTextColor={b.buttonTextColor}
               />

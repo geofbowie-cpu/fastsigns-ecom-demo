@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from "react"
+import { normalizeQty } from "@/lib/order-qty"
 
 export type CartItem = {
   slug: string
@@ -9,6 +10,8 @@ export type CartItem = {
   unit?: string
   qty: number
   note?: string
+  minQty?: number
+  increment?: number
 }
 
 type CartContextValue = {
@@ -71,20 +74,22 @@ export default function CartProvider({
 
   const addItem = useCallback<CartContextValue["addItem"]>((item) => {
     setItems((prev) => {
-      const qty = item.qty ?? 1
+      const requested = item.qty ?? normalizeQty(1, item.minQty, item.increment)
       const existing = prev.find((i) => i.slug === item.slug)
       if (existing) {
         return prev.map((i) =>
-          i.slug === item.slug ? { ...i, qty: i.qty + qty } : i
+          i.slug === item.slug
+            ? { ...i, qty: normalizeQty(i.qty + requested, i.minQty, i.increment) }
+            : i
         )
       }
-      return [...prev, { ...item, qty }]
+      return [...prev, { ...item, qty: normalizeQty(requested, item.minQty, item.increment) }]
     })
   }, [])
 
   const updateQty = useCallback((slug: string, qty: number) => {
     setItems((prev) =>
-      prev.map((i) => (i.slug === slug ? { ...i, qty: Math.max(1, qty) } : i))
+      prev.map((i) => (i.slug === slug ? { ...i, qty: normalizeQty(qty, i.minQty, i.increment) } : i))
     )
   }, [])
 

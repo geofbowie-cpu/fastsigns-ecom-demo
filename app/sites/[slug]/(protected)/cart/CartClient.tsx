@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useCart } from "../_cart/CartProvider"
+import { effectiveMin, effectiveStep, minLabel } from "@/lib/order-qty"
 
 export default function CartClient({
   slug,
@@ -151,7 +152,7 @@ export default function CartClient({
               <div className="flex items-center gap-3 mt-2">
                 <div className="inline-flex items-center border border-gray-300 rounded-lg overflow-hidden">
                   <button
-                    onClick={() => updateQty(item.slug, item.qty - 1)}
+                    onClick={() => updateQty(item.slug, item.qty - effectiveStep(item.increment))}
                     className="px-2.5 py-1 text-gray-600 hover:bg-gray-50 leading-none"
                     aria-label="Decrease quantity"
                   >
@@ -159,19 +160,23 @@ export default function CartClient({
                   </button>
                   <input
                     type="number"
-                    min={1}
+                    min={effectiveMin(item.minQty)}
+                    step={effectiveStep(item.increment)}
                     value={item.qty}
-                    onChange={(e) => updateQty(item.slug, Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-12 text-center text-sm py-1 outline-none border-x border-gray-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    onChange={(e) => updateQty(item.slug, parseInt(e.target.value) || effectiveMin(item.minQty))}
+                    className="w-14 text-center text-sm py-1 outline-none border-x border-gray-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <button
-                    onClick={() => updateQty(item.slug, item.qty + 1)}
+                    onClick={() => updateQty(item.slug, item.qty + effectiveStep(item.increment))}
                     className="px-2.5 py-1 text-gray-600 hover:bg-gray-50 leading-none"
                     aria-label="Increase quantity"
                   >
                     +
                   </button>
                 </div>
+                {minLabel(item.minQty, item.increment) && (
+                  <span className="text-xs text-gray-400">{minLabel(item.minQty, item.increment)}</span>
+                )}
               </div>
               <input
                 type="text"

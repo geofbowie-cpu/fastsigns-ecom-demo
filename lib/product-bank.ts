@@ -29,6 +29,8 @@ export type BankProduct = {
   tags: string[]
   leadTime: string
   imageUrl?: string
+  minOrderQty?: number    // vendor minimum order quantity (floor)
+  orderIncrement?: number // pack increment / step (e.g. lanyards in packs of 100)
 }
 
 export type BankCategory = {
