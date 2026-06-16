@@ -11,6 +11,7 @@ import type { ResolvedBrand } from "@/lib/resolve-brand"
 import type { BankProduct, BankCategory } from "@/lib/product-bank"
 import type { Tenant } from "@/lib/tenant"
 import V2SearchBox from "./V2SearchBox"
+import ProductCardActions from "../ProductCardActions"
 
 export type V2ProductsPageProps = {
   slug: string
@@ -370,11 +371,58 @@ function ProductCard({
   product,
   slug,
   b,
+  enableCart,
 }: {
   product: BankProduct
   slug: string
   b: ResolvedBrand
+  enableCart: boolean
 }) {
+  // When ordering is enabled, the card can't be a single <Link> — the cart
+  // controls need their own clicks. Wrap image+body in a Link, actions below.
+  if (enableCart) {
+    return (
+      <div className="group bg-white rounded-card shadow-soft border border-ink-200 overflow-hidden transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-elevated flex flex-col">
+        <Link href={`/sites/${slug}/products/${product.slug}`} className="block">
+          <div className="aspect-[4/3] overflow-hidden relative">
+            {product.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+            ) : (
+              <div
+                className="w-full h-full flex items-center justify-center"
+                style={{ background: `linear-gradient(135deg, ${product.gradientFrom} 0%, ${product.gradientTo} 100%)` }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 text-white/60">
+                  <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="M3 16l5-5 4 4 3-3 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+            )}
+          </div>
+          <div className="p-3 pb-1">
+            <h3 className="font-display font-semibold text-ink-900 text-sm leading-snug group-hover:underline line-clamp-2 mb-1">
+              {product.name}
+            </h3>
+            <p className="text-xs text-ink-600 line-clamp-2 mb-2">{product.shortDesc}</p>
+            <div className="flex flex-wrap gap-1.5">
+              <Badge className="text-[10px] px-2 py-0.5">{product.category}</Badge>
+              {product.leadTime && (
+                <Badge variant="success" className="text-[10px] px-2 py-0.5">{product.leadTime}</Badge>
+              )}
+            </div>
+          </div>
+        </Link>
+        <ProductCardActions
+          tenantSlug={slug}
+          product={{ slug: product.slug, name: product.name, imageUrl: product.imageUrl, unit: product.unit }}
+          buttonColor={b.buttonColor}
+          buttonTextColor={b.buttonTextColor}
+        />
+      </div>
+    )
+  }
+
   return (
     <Link
       href={`/sites/${slug}/products/${product.slug}`}
@@ -457,6 +505,7 @@ function ProductGrid({
   b,
   category,
   q,
+  enableCart,
 }: {
   filtered: BankProduct[]
   cats: BankCategory[]
@@ -464,6 +513,7 @@ function ProductGrid({
   b: ResolvedBrand
   category: string | undefined
   q: string | undefined
+  enableCart: boolean
 }) {
   const activeCategory = category
     ? cats.find((c) => c.slug === category)
@@ -535,7 +585,7 @@ function ProductGrid({
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
           {filtered.map((p) => (
-            <ProductCard key={p.slug} product={p} slug={slug} b={b} />
+            <ProductCard key={p.slug} product={p} slug={slug} b={b} enableCart={enableCart} />
           ))}
         </div>
       )}
@@ -641,6 +691,7 @@ export default function V2ProductsPage({
             b={b}
             category={category}
             q={q}
+            enableCart={tenant.enable_cart}
           />
         </div>
       </main>

@@ -10,6 +10,7 @@ import { Breadcrumb } from "@/components/v2/ui/breadcrumb"
 import { EmailLink, PhoneLink } from "@/components/TrackableLink"
 import QuoteButton from "../_components/QuoteButton"
 import ProductViewTracker from "../_components/ProductViewTracker"
+import AddToCartButton from "../../../_cart/AddToCartButton"
 import type { ResolvedBrand } from "@/lib/resolve-brand"
 import type { BankProduct, BankCategory } from "@/lib/product-bank"
 import type { Tenant } from "@/lib/tenant"
@@ -483,8 +484,15 @@ export default function V2ProductDetailPage({
               </div>
             )}
 
-            {/* Quote CTA block — the main conversion action */}
-            {isLive ? (
+            {/* Conversion action — cart when ordering is enabled, else quote/contact */}
+            {tenant.enable_cart ? (
+              <AddToCartButton
+                slug={slug}
+                product={{ slug: product.slug, name: product.name, imageUrl: product.imageUrl, unit: product.unit }}
+                buttonColor={b.buttonColor}
+                buttonTextColor={b.buttonTextColor}
+              />
+            ) : isLive ? (
               <div className="bg-white rounded-card border border-ink-200 shadow-soft p-6 space-y-4">
                 <div>
                   <h3 className="font-display font-bold text-ink-900 text-lg">
