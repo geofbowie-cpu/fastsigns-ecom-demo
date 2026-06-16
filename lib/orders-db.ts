@@ -55,6 +55,34 @@ export async function markOrderEmail(
   }
 }
 
+export type OrderRow = {
+  id: string
+  tenant_id: string
+  tenant_slug: string
+  customer_email: string
+  items: OrderLineItem[]
+  order_notes: string | null
+  created_at: string
+  po_email_to: string | null
+  po_email_status: "sent" | "failed" | null
+  po_email_sent_at: string | null
+  po_email_error: string | null
+}
+
+/** Lists orders newest-first, optionally scoped to one tenant. */
+export async function listOrders(tenantId?: string): Promise<OrderRow[]> {
+  let q = adminClient()
+    .from("orders")
+    .select(
+      "id, tenant_id, tenant_slug, customer_email, items, order_notes, created_at, po_email_to, po_email_status, po_email_sent_at, po_email_error"
+    )
+    .order("created_at", { ascending: false })
+  if (tenantId) q = q.eq("tenant_id", tenantId)
+  const { data, error } = await q
+  if (error) throw new Error(error.message)
+  return (data ?? []) as OrderRow[]
+}
+
 /** Short human-facing reference derived from a uuid, e.g. "PO-A1B2C3". */
 export function orderReference(id: string): string {
   return `PO-${id.replace(/-/g, "").slice(0, 6).toUpperCase()}`
