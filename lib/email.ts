@@ -104,6 +104,7 @@ export async function sendPurchaseOrderEmail(opts: {
   reference: string
   companyName: string
   customerEmail: string
+  contact?: { firstName: string; lastName: string; email: string; phone: string }
   tenantSlug?: string
   items: { slug?: string; name: string; qty: number; note?: string }[]
   orderNotes?: string
@@ -141,6 +142,23 @@ export async function sendPurchaseOrderEmail(opts: {
        </td></tr>`
     : ""
 
+  const c = opts.contact
+  const contactName = c ? escapeHtml(`${c.firstName} ${c.lastName}`.trim()) : ""
+  const contactBlock = c
+    ? `<tr><td style="padding:8px 24px 16px;">
+         <div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Contact</div>
+         <table role="presentation" cellpadding="0" cellspacing="0" style="font-size:14px;color:#111827;line-height:1.7;">
+           <tr><td style="color:#6b7280;padding-right:12px;">Name</td><td style="font-weight:600;">${contactName}</td></tr>
+           <tr><td style="color:#6b7280;padding-right:12px;">Email</td><td><a href="mailto:${escapeHtml(c.email)}" style="color:${color};text-decoration:none;font-weight:600;">${escapeHtml(c.email)}</a></td></tr>
+           <tr><td style="color:#6b7280;padding-right:12px;">Phone</td><td><a href="tel:${escapeHtml(c.phone)}" style="color:#111827;text-decoration:none;">${escapeHtml(c.phone)}</a></td></tr>
+         </table>
+       </td></tr>`
+    : ""
+
+  // Who the rep should reply to / contact: prefer the form's business email.
+  const replyTarget = c?.email && isValidEmail(c.email) ? c.email : opts.customerEmail
+  const replyLabel = contactName ? `${contactName} (${replyTarget})` : replyTarget
+
   const html = `<!doctype html>
 <html>
 <body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
@@ -151,11 +169,11 @@ export async function sendPurchaseOrderEmail(opts: {
           <div style="font-size:18px;font-weight:800;color:#ffffff;">New order — ${company}</div>
           <div style="font-size:13px;color:rgba(255,255,255,0.8);margin-top:4px;">Reference ${escapeHtml(opts.reference)}</div>
         </td></tr>
-        <tr><td style="padding:20px 24px 8px;">
+        ${contactBlock || `<tr><td style="padding:20px 24px 8px;">
           <div style="font-size:14px;color:#6b7280;">
             Submitted by <strong style="color:#111827;">${escapeHtml(opts.customerEmail)}</strong>
           </div>
-        </td></tr>
+        </td></tr>`}
         <tr><td style="padding:8px 24px 0;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eef0f2;border-radius:10px;overflow:hidden;">
             <tr style="background:#f9fafb;">
@@ -169,7 +187,7 @@ export async function sendPurchaseOrderEmail(opts: {
         ${notesBlock}
         <tr><td style="padding:20px 24px 28px;border-top:1px solid #f3f4f6;">
           <p style="margin:0;font-size:12px;line-height:1.6;color:#9ca3af;">
-            Reply directly to ${escapeHtml(opts.customerEmail)} to confirm pricing, lead time, and next steps.
+            Reply directly to ${escapeHtml(replyLabel)} to confirm pricing, lead time, and next steps.
           </p>
         </td></tr>
       </table>
@@ -182,7 +200,10 @@ export async function sendPurchaseOrderEmail(opts: {
   const textRows = opts.items
     .map((it) => `  • ${it.name} — qty ${it.qty}${it.note ? ` (note: ${it.note})` : ""}`)
     .join("\n")
-  const text = `New order — ${opts.companyName}\nReference ${opts.reference}\nSubmitted by ${opts.customerEmail}\n\n${textRows}\n${opts.orderNotes ? `\nOrder notes:\n${opts.orderNotes}\n` : ""}\nReply to ${opts.customerEmail} to confirm pricing and next steps.`
+  const contactText = c
+    ? `Contact: ${contactName}\nEmail: ${c.email}\nPhone: ${c.phone}`
+    : `Submitted by ${opts.customerEmail}`
+  const text = `New order — ${opts.companyName}\nReference ${opts.reference}\n${contactText}\n\n${textRows}\n${opts.orderNotes ? `\nOrder notes:\n${opts.orderNotes}\n` : ""}\nReply to ${replyLabel} to confirm pricing and next steps.`
 
   // Audit copy: BCC an internal address on every PO so there's always a
   // human-visible record, independent of DB logging. Set PO_NOTIFY_EMAIL.
@@ -192,9 +213,9 @@ export async function sendPurchaseOrderEmail(opts: {
     const { error } = await resend.emails.send({
       from: FROM,
       to: opts.to,
-      // Only set reply_to when the submitter gave a real address — guest
-      // orders carry a placeholder like "(not signed in)" which Resend rejects.
-      ...(isValidEmail(opts.customerEmail) ? { replyTo: opts.customerEmail } : {}),
+      // Reply to the form's business email (falls back to customerEmail).
+      // Only set when valid — Resend rejects placeholders like "(not signed in)".
+      ...(isValidEmail(replyTarget) ? { replyTo: replyTarget } : {}),
       ...(notify && isValidEmail(notify) ? { bcc: notify } : {}),
       subject: `New order ${opts.reference} — ${opts.companyName}`,
       html,

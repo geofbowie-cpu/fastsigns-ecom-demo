@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server"
-import { cookies } from "next/headers"
 import { getTenantBySlug } from "@/lib/tenant"
 import { resolveBrand } from "@/lib/resolve-brand"
-import { getTenantSession, cookieName } from "@/lib/tenant-auth"
 import { createOrder, orderReference, markOrderEmail } from "@/lib/orders-db"
 import { sendPurchaseOrderEmail } from "@/lib/email"
 import { apiError, parseBody } from "@/lib/api-helpers"
@@ -12,16 +10,15 @@ import { CartSubmitSchema } from "@/lib/schemas"
 export async function POST(req: Request) {
   const result = CartSubmitSchema.safeParse(await parseBody(req))
   if (!result.success) return apiError(result.error.issues[0].message)
-  const { slug, items, orderNotes } = result.data
+  const { slug, items, orderNotes, contact } = result.data
 
   const tenant = await getTenantBySlug(slug)
   if (!tenant) return apiError("Site not found", 404)
   if (!tenant.enable_cart) return apiError("Ordering isn't enabled for this site.", 400)
 
-  // Auth is optional for now (testing mode). Use session email when available.
-  const store = await cookies()
-  const raw = store.get(cookieName(slug))?.value
-  const customerEmail = getTenantSession(slug, raw) ?? "(not signed in)"
+  // The submitter identity is the contact they provide on the cart form.
+  // (Tenant session email, when present, is kept only for reference.)
+  const customerEmail = contact.email
 
   const b = resolveBrand(tenant.brand)
   const repEmail = b.contactEmail || b.supportEmail
@@ -39,6 +36,7 @@ export async function POST(req: Request) {
       customerEmail,
       items,
       orderNotes,
+      contact,
     })
   } catch (e) {
     logger.error("cart.submit insert failed", { slug, error: e instanceof Error ? e.message : String(e) })
@@ -53,6 +51,7 @@ export async function POST(req: Request) {
     reference,
     companyName: b.company,
     customerEmail,
+    contact,
     tenantSlug: slug,
     items: items.map((i) => ({ slug: i.slug, name: i.name, qty: i.qty, note: i.note })),
     orderNotes,

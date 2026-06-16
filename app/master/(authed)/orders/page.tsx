@@ -89,7 +89,7 @@ export default async function OrdersPage() {
                 <th className="px-4 py-3 font-semibold">Reference</th>
                 <th className="px-4 py-3 font-semibold">Site</th>
                 <th className="px-4 py-3 font-semibold">Items</th>
-                <th className="px-4 py-3 font-semibold">Submitted by</th>
+                <th className="px-4 py-3 font-semibold">Contact</th>
                 <th className="px-4 py-3 font-semibold">Email</th>
                 <th className="px-4 py-3 font-semibold">Sent to</th>
                 <th className="px-4 py-3 font-semibold">When</th>
@@ -111,7 +111,19 @@ export default async function OrdersPage() {
                     <td className="px-4 py-3 text-gray-500">
                       {itemCount} item{itemCount !== 1 ? "s" : ""}
                     </td>
-                    <td className="px-4 py-3 text-gray-500">{o.customer_email}</td>
+                    <td className="px-4 py-3 text-gray-500">
+                      {o.contact_first_name || o.contact_last_name ? (
+                        <div>
+                          <div className="text-gray-900 font-medium">
+                            {[o.contact_first_name, o.contact_last_name].filter(Boolean).join(" ")}
+                          </div>
+                          <div className="text-xs">{o.contact_email ?? o.customer_email}</div>
+                          {o.contact_phone && <div className="text-xs text-gray-400">{o.contact_phone}</div>}
+                        </div>
+                      ) : (
+                        o.customer_email
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       <StatusPill status={o.po_email_status} />
                       {o.po_email_error && (

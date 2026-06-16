@@ -10,12 +10,20 @@ export type OrderLineItem = {
   note?: string
 }
 
+export type OrderContact = {
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+}
+
 export type OrderInput = {
   tenantId: string
   tenantSlug: string
   customerEmail: string
   items: OrderLineItem[]
   orderNotes?: string
+  contact: OrderContact
 }
 
 /** Inserts an order and returns its generated id. */
@@ -28,6 +36,10 @@ export async function createOrder(input: OrderInput): Promise<string> {
       customer_email: input.customerEmail.trim().toLowerCase(),
       items: input.items,
       order_notes: input.orderNotes?.trim() || null,
+      contact_first_name: input.contact.firstName.trim(),
+      contact_last_name: input.contact.lastName.trim(),
+      contact_email: input.contact.email.trim().toLowerCase(),
+      contact_phone: input.contact.phone.trim(),
     })
     .select("id")
     .single()
@@ -63,6 +75,10 @@ export type OrderRow = {
   items: OrderLineItem[]
   order_notes: string | null
   created_at: string
+  contact_first_name: string | null
+  contact_last_name: string | null
+  contact_email: string | null
+  contact_phone: string | null
   po_email_to: string | null
   po_email_status: "sent" | "failed" | null
   po_email_sent_at: string | null
@@ -74,7 +90,7 @@ export async function listOrders(tenantId?: string): Promise<OrderRow[]> {
   let q = adminClient()
     .from("orders")
     .select(
-      "id, tenant_id, tenant_slug, customer_email, items, order_notes, created_at, po_email_to, po_email_status, po_email_sent_at, po_email_error"
+      "id, tenant_id, tenant_slug, customer_email, items, order_notes, created_at, contact_first_name, contact_last_name, contact_email, contact_phone, po_email_to, po_email_status, po_email_sent_at, po_email_error"
     )
     .order("created_at", { ascending: false })
   if (tenantId) q = q.eq("tenant_id", tenantId)

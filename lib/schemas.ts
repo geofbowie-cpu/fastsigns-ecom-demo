@@ -38,6 +38,12 @@ export const CartSubmitSchema = z.object({
     )
     .min(1, { message: "Your cart is empty." }),
   orderNotes: z.string().max(2000).optional(),
+  contact: z.object({
+    firstName: z.string().trim().min(1, { message: "First name is required." }).max(100),
+    lastName: z.string().trim().min(1, { message: "Last name is required." }).max(100),
+    email: z.string().trim().email({ message: "A valid business email is required." }).max(200),
+    phone: z.string().trim().min(7, { message: "A valid phone number is required." }).max(40),
+  }),
 })
 
 // ── Categories ───────────────────────────────────────────────
