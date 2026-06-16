@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { Badge } from "@/components/v2/ui/badge"
 import { Breadcrumb } from "@/components/v2/ui/breadcrumb"
 import { EmailLink, PhoneLink } from "@/components/TrackableLink"
+import V2SearchBox from "../products/_v2/V2SearchBox"
 import type { ResolvedBrand } from "@/lib/resolve-brand"
 import type { BankProduct, BankCategory } from "@/lib/product-bank"
 import type { Tenant } from "@/lib/tenant"
@@ -125,27 +126,8 @@ function MainHeader({ b, slug }: { b: ResolvedBrand; slug: string }) {
           )}
         </Link>
 
-        {/* Search box — inline mock, non-functional */}
-        <div className="flex-1 max-w-2xl">
-          <div className="rounded-card border-2 border-white/20 bg-white/10 flex items-center h-10 px-3 gap-2">
-            <svg
-              className="h-4 w-4 flex-shrink-0"
-              style={{ color: b.navTextColor, opacity: 0.6 }}
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden
-            >
-              <path
-                fillRule="evenodd"
-                d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <span className="text-sm" style={{ color: b.navTextColor, opacity: 0.5 }}>
-              Search products, categories…
-            </span>
-          </div>
-        </div>
+        {/* Search box — navigates to the products page with the query applied */}
+        <V2SearchBox slug={slug} navTextColor={b.navTextColor} />
 
         {/* Right side */}
         <div className="flex items-center gap-3 ml-4">
