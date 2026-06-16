@@ -184,11 +184,18 @@ export async function sendPurchaseOrderEmail(opts: {
     .join("\n")
   const text = `New order — ${opts.companyName}\nReference ${opts.reference}\nSubmitted by ${opts.customerEmail}\n\n${textRows}\n${opts.orderNotes ? `\nOrder notes:\n${opts.orderNotes}\n` : ""}\nReply to ${opts.customerEmail} to confirm pricing and next steps.`
 
+  // Audit copy: BCC an internal address on every PO so there's always a
+  // human-visible record, independent of DB logging. Set PO_NOTIFY_EMAIL.
+  const notify = process.env.PO_NOTIFY_EMAIL?.trim()
+
   try {
     const { error } = await resend.emails.send({
       from: FROM,
       to: opts.to,
-      replyTo: opts.customerEmail,
+      // Only set reply_to when the submitter gave a real address — guest
+      // orders carry a placeholder like "(not signed in)" which Resend rejects.
+      ...(isValidEmail(opts.customerEmail) ? { replyTo: opts.customerEmail } : {}),
+      ...(notify && isValidEmail(notify) ? { bcc: notify } : {}),
       subject: `New order ${opts.reference} — ${opts.companyName}`,
       html,
       text,
@@ -198,6 +205,11 @@ export async function sendPurchaseOrderEmail(opts: {
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Failed to send email" }
   }
+}
+
+/** Minimal RFC-ish email check — enough to keep junk out of to/replyTo/bcc. */
+function isValidEmail(s: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim())
 }
 
 function escapeHtml(s: string): string {

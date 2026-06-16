@@ -3,7 +3,7 @@ import { cookies } from "next/headers"
 import { getTenantBySlug } from "@/lib/tenant"
 import { resolveBrand } from "@/lib/resolve-brand"
 import { getTenantSession, cookieName } from "@/lib/tenant-auth"
-import { createOrder, orderReference } from "@/lib/orders-db"
+import { createOrder, orderReference, markOrderEmail } from "@/lib/orders-db"
 import { sendPurchaseOrderEmail } from "@/lib/email"
 import { apiError, parseBody } from "@/lib/api-helpers"
 import { logger } from "@/lib/logger"
@@ -57,6 +57,13 @@ export async function POST(req: Request) {
     items: items.map((i) => ({ slug: i.slug, name: i.name, qty: i.qty, note: i.note })),
     orderNotes,
     brandColor: b.primaryColor,
+  })
+
+  // Record delivery outcome on the order row (queryable audit trail).
+  await markOrderEmail(orderId, {
+    to: repEmail,
+    status: sent.ok ? "sent" : "failed",
+    error: sent.ok ? undefined : sent.error,
   })
 
   if (!sent.ok) {
