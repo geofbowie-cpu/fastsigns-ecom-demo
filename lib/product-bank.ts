@@ -4,11 +4,27 @@
 
 // Per-product overrides stored in tenants.product_overrides JSONB.
 // All fields are optional — only set what you want to override.
+// Editable logo-placement spec — stored so a placed logo can be re-edited or
+// removed later (the saved imageUrl is a flat composite; this is how to rebuild it).
+export type LogoPlacementSpec = {
+  baseImageUrl: string   // the ORIGINAL product image the logo was placed on
+  logoUrl: string
+  colorFilter: string
+  transform: {
+    x: number; y: number; width: number; rotation: number
+    skewX: number; skewY: number; opacity: number
+  }
+  shadow?: {
+    enabled: boolean; color: string; blur: number; offsetX: number; offsetY: number
+  }
+}
+
 export type ProductOverride = {
   disabled?: boolean   // hide this product from the tenant's site
   price?: number       // override startingPrice
-  imageUrl?: string    // custom product image URL
+  imageUrl?: string    // custom product image URL (flat composite when a logo is placed)
   featured?: boolean   // override featured flag
+  logoPlacement?: LogoPlacementSpec  // editable spec behind a placed logo
 }
 export type ProductOverrides = Record<string, ProductOverride>
 

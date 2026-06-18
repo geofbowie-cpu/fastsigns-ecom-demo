@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, useCallback } from "react"
+import type { LogoPlacementSpec } from "@/lib/product-bank"
 
 // ── Types ──────────────────────────────────────────────────────
 type Transform = {
@@ -12,6 +13,16 @@ type Transform = {
   skewY: number    // degrees
   opacity: number
 }
+
+type Shadow = {
+  enabled: boolean
+  color: string
+  blur: number
+  offsetX: number
+  offsetY: number
+}
+
+const DEFAULT_SHADOW: Shadow = { enabled: false, color: "#000000", blur: 12, offsetX: 6, offsetY: 6 }
 
 type Handle = "move" | "rotate" | "scale-tl" | "scale-tr" | "scale-bl" | "scale-br"
 
@@ -89,13 +100,15 @@ export default function MockupEditor({
   productImageUrl,
   tenantLogoUrl,
   tenantSlug,
+  initialPlacement,
   onUseImage,
   onClose,
 }: {
   productImageUrl: string
   tenantLogoUrl: string
   tenantSlug: string
-  onUseImage: (url: string) => void
+  initialPlacement?: LogoPlacementSpec | null
+  onUseImage: (url: string, placement: LogoPlacementSpec) => void
   onClose: () => void
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -104,19 +117,29 @@ export default function MockupEditor({
 
   const [logoLibrary, setLogoLibrary] = useState<LogoEntry[]>(() => {
     const entries: LogoEntry[] = []
-    if (tenantLogoUrl) entries.push({ url: tenantLogoUrl, label: "Tenant logo" })
+    if (initialPlacement?.logoUrl) entries.push({ url: initialPlacement.logoUrl, label: "Placed logo" })
+    if (tenantLogoUrl && tenantLogoUrl !== initialPlacement?.logoUrl) {
+      entries.push({ url: tenantLogoUrl, label: "Tenant logo" })
+    }
     return entries
   })
   const [activeLogoIdx, setActiveLogoIdx] = useState(0)
   const [newLogoUrl, setNewLogoUrl] = useState("")
-  const [colorFilter, setColorFilter] = useState<ColorFilter>("original")
-  const [transform, setTransform] = useState<Transform>({
-    x: CW / 2, y: CH / 2,
-    rotation: 0,
-    width: CW * 0.32,
-    skewX: 0, skewY: 0,
-    opacity: 1,
-  })
+  const [colorFilter, setColorFilter] = useState<ColorFilter>(
+    (initialPlacement?.colorFilter as ColorFilter) ?? "original"
+  )
+  const [transform, setTransform] = useState<Transform>(
+    initialPlacement?.transform ?? {
+      x: CW / 2, y: CH / 2,
+      rotation: 0,
+      width: CW * 0.32,
+      skewX: 0, skewY: 0,
+      opacity: 1,
+    }
+  )
+  const [shadow, setShadow] = useState<Shadow>(initialPlacement?.shadow ?? DEFAULT_SHADOW)
+  const [showGrid, setShowGrid] = useState(true)
+  const capturingRef = useRef(false)
   const [dragState, setDragState] = useState<DragState | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -174,6 +197,12 @@ export default function MockupEditor({
     ctx.save()
     ctx.globalAlpha = transform.opacity
     ctx.filter = cf.filter
+    if (shadow.enabled) {
+      ctx.shadowColor = shadow.color
+      ctx.shadowBlur = shadow.blur
+      ctx.shadowOffsetX = shadow.offsetX
+      ctx.shadowOffsetY = shadow.offsetY
+    }
     ctx.translate(transform.x, transform.y)
     ctx.rotate((transform.rotation * Math.PI) / 180)
     ctx.transform(
@@ -184,6 +213,31 @@ export default function MockupEditor({
     )
     ctx.drawImage(logoImg, -hw, -hh, lw, lh)
     ctx.restore()
+
+    // ── Centering grid (editor-only guide; never saved into the image) ──
+    if (showGrid && !capturingRef.current) {
+      ctx.save()
+      // Rule-of-thirds (faint)
+      ctx.strokeStyle = "rgba(255,255,255,0.25)"
+      ctx.lineWidth = 1
+      ctx.setLineDash([])
+      for (const fx of [1 / 3, 2 / 3]) {
+        ctx.beginPath(); ctx.moveTo(CW * fx, 0); ctx.lineTo(CW * fx, CH); ctx.stroke()
+      }
+      for (const fy of [1 / 3, 2 / 3]) {
+        ctx.beginPath(); ctx.moveTo(0, CH * fy); ctx.lineTo(CW, CH * fy); ctx.stroke()
+      }
+      // Center cross-hairs (stronger) — highlight when the logo is centered
+      const centeredX = Math.abs(transform.x - CW / 2) < 1
+      const centeredY = Math.abs(transform.y - CH / 2) < 1
+      ctx.lineWidth = 1.5
+      ctx.setLineDash([6, 4])
+      ctx.strokeStyle = centeredX ? "rgba(34,197,94,0.9)" : "rgba(59,130,246,0.6)"
+      ctx.beginPath(); ctx.moveTo(CW / 2, 0); ctx.lineTo(CW / 2, CH); ctx.stroke()
+      ctx.strokeStyle = centeredY ? "rgba(34,197,94,0.9)" : "rgba(59,130,246,0.6)"
+      ctx.beginPath(); ctx.moveTo(0, CH / 2); ctx.lineTo(CW, CH / 2); ctx.stroke()
+      ctx.restore()
+    }
 
     // ── Draw selection UI ────────────────────────────────────
     // Only when selected, and skipped during save capture.
@@ -248,7 +302,7 @@ export default function MockupEditor({
     ctx.textBaseline = "middle"
     ctx.fillText("↻", rx, ry + 0.5)
     ctx.restore()
-  }, [productImg, logoImg, transform, colorFilter, hoveredHandle, selected])
+  }, [productImg, logoImg, transform, colorFilter, hoveredHandle, selected, shadow, showGrid])
 
   useEffect(() => { draw() }, [draw])
 
@@ -332,11 +386,12 @@ export default function MockupEditor({
     const { handle, startMX, startMY, startT, startAngle } = dragState
 
     if (handle === "move") {
-      setTransform((t) => ({
-        ...t,
-        x: startT.x + (mx - startMX),
-        y: startT.y + (my - startMY),
-      }))
+      const SNAP = 8 // px — pull to canvas center when close
+      let nx = startT.x + (mx - startMX)
+      let ny = startT.y + (my - startMY)
+      if (Math.abs(nx - CW / 2) < SNAP) nx = CW / 2
+      if (Math.abs(ny - CH / 2) < SNAP) ny = CH / 2
+      setTransform((t) => ({ ...t, x: nx, y: ny }))
     } else if (handle === "rotate") {
       const currentAngle = angle(startT.x, startT.y, mx, my)
       const delta = (currentAngle - startAngle) * (180 / Math.PI)
@@ -374,11 +429,11 @@ export default function MockupEditor({
     if (!logoImg) return
     setSaving(true); setError(null)
 
-    // Hide handles on the live canvas before capturing.
-    // selectedRef drives draw()'s handle rendering — flipping it + calling
-    // draw() synchronously redraws without handles.
+    // Hide handles AND the centering grid before capturing — neither belongs
+    // in the saved image. The drop shadow stays (it's part of the artwork).
     const prevSelected = selectedRef.current
     selectedRef.current = false
+    capturingRef.current = true
     draw()
 
     try {
@@ -396,13 +451,23 @@ export default function MockupEditor({
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? "Save failed")
-      onUseImage(json.url)
+      // Return the editable spec alongside the flat composite so it can be
+      // re-opened and adjusted (or removed) later.
+      const placement: LogoPlacementSpec = {
+        baseImageUrl: productImageUrl,
+        logoUrl: logoLibrary[activeLogoIdx]?.url ?? "",
+        colorFilter,
+        transform: { ...transform },
+        shadow: { ...shadow },
+      }
+      onUseImage(json.url, placement)
       onClose()
     } catch (e: any) {
       setError(e.message)
     } finally {
-      // Restore handles
+      // Restore handles + grid
       selectedRef.current = prevSelected
+      capturingRef.current = false
       draw()
       setSaving(false)
     }
@@ -570,13 +635,87 @@ export default function MockupEditor({
                   className="w-full accent-blue-600" />
               </div>
 
+              <hr className="border-gray-100" />
+
+              {/* Drop shadow */}
+              <div>
+                <label className="flex items-center justify-between cursor-pointer mb-2">
+                  <span className="text-xs font-bold text-gray-700">Drop shadow</span>
+                  <input
+                    type="checkbox"
+                    checked={shadow.enabled}
+                    onChange={(e) => setShadow((s) => ({ ...s, enabled: e.target.checked }))}
+                    className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                </label>
+                {shadow.enabled && (
+                  <div className="space-y-2">
+                    {[
+                      { label: "Blur", key: "blur" as const, min: 0, max: 60, step: 1, suffix: "px" },
+                      { label: "Offset X", key: "offsetX" as const, min: -40, max: 40, step: 1, suffix: "px" },
+                      { label: "Offset Y", key: "offsetY" as const, min: -40, max: 40, step: 1, suffix: "px" },
+                    ].map(({ label, key, min, max, step, suffix }) => (
+                      <div key={key}>
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-[11px] text-gray-600">{label}</span>
+                          <span className="text-[11px] font-mono text-gray-400">{shadow[key]}{suffix}</span>
+                        </div>
+                        <input
+                          type="range" min={min} max={max} step={step} value={shadow[key]}
+                          onChange={(e) => setShadow((s) => ({ ...s, [key]: parseInt(e.target.value) }))}
+                          className="w-full accent-blue-600 h-1"
+                        />
+                      </div>
+                    ))}
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-gray-600">Color</span>
+                      <input
+                        type="color"
+                        value={shadow.color}
+                        onChange={(e) => setShadow((s) => ({ ...s, color: e.target.value }))}
+                        className="w-8 h-6 rounded border border-gray-200 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <hr className="border-gray-100" />
+
+              {/* Alignment */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-gray-700">Alignment</span>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={showGrid}
+                      onChange={(e) => setShowGrid(e.target.checked)}
+                      className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-[11px] text-gray-600">Grid</span>
+                  </label>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  <button type="button"
+                    onClick={() => setTransform((t) => ({ ...t, x: CW / 2 }))}
+                    className="py-1.5 rounded-lg border border-gray-200 text-[11px] font-semibold text-gray-600 hover:border-gray-300">Center H</button>
+                  <button type="button"
+                    onClick={() => setTransform((t) => ({ ...t, y: CH / 2 }))}
+                    className="py-1.5 rounded-lg border border-gray-200 text-[11px] font-semibold text-gray-600 hover:border-gray-300">Center V</button>
+                  <button type="button"
+                    onClick={() => setTransform((t) => ({ ...t, x: CW / 2, y: CH / 2 }))}
+                    className="py-1.5 rounded-lg border border-gray-200 text-[11px] font-semibold text-gray-600 hover:border-gray-300">Both</button>
+                </div>
+              </div>
+
               {/* Reset */}
               <button
                 type="button"
-                onClick={() => setTransform((t) => ({
+                onClick={() => { setTransform((t) => ({
                   x: CW / 2, y: CH / 2, rotation: 0, width: CW * 0.32,
                   skewX: 0, skewY: 0, opacity: 1,
-                }))}
+                })); setShadow(DEFAULT_SHADOW) }}
                 className="text-[11px] text-gray-400 hover:text-gray-600 w-full text-left"
               >↺ Reset transforms</button>
             </div>

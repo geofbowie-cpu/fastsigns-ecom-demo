@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
-import { type BankCategory, type ProductOverrides } from "@/lib/product-bank"
+import { type BankCategory, type ProductOverrides, type LogoPlacementSpec } from "@/lib/product-bank"
 import type { DbProduct } from "@/lib/products-db"
 import type { Tenant } from "@/lib/tenant"
 import ImageUploader from "../../../_shared/ImageUploader"
@@ -1475,6 +1475,7 @@ function BrandImageButton({
   tenantSlug,
   productImageUrl,
   logoUrl,
+  initialPlacement,
   onUseImage,
 }: {
   tenantSlug: string
@@ -1482,9 +1483,11 @@ function BrandImageButton({
   logoUrl: string
   primaryColor: string
   companyName: string
-  onUseImage: (url: string) => void
+  initialPlacement?: LogoPlacementSpec | null
+  onUseImage: (url: string, placement: LogoPlacementSpec) => void
 }) {
   const [open, setOpen] = useState(false)
+  const editing = !!initialPlacement
 
   return (
     <>
@@ -1496,13 +1499,14 @@ function BrandImageButton({
         className="mt-1 text-xs text-blue-600 hover:text-blue-800 disabled:opacity-40 font-semibold flex items-center gap-1"
       >
         <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="7" cy="7" r="1" fill="currentColor"/></svg>
-        Place logo on image
+        {editing ? "Edit placed logo" : "Place logo on image"}
       </button>
       {open && (
         <MockupEditor
           productImageUrl={productImageUrl}
           tenantLogoUrl={logoUrl}
           tenantSlug={tenantSlug}
+          initialPlacement={initialPlacement}
           onUseImage={onUseImage}
           onClose={() => setOpen(false)}
         />
@@ -1777,6 +1781,10 @@ function ProductImageCell({
   onChange,
   tenantSlug,
   productImageUrl,
+  baseImageUrl,
+  placement,
+  onPlacedLogo,
+  onRemoveLogo,
   brandLogoUrl,
   brandPrimaryColor,
   brandCompanyName,
@@ -1785,6 +1793,10 @@ function ProductImageCell({
   onChange: (url: string) => void
   tenantSlug: string
   productImageUrl: string
+  baseImageUrl: string
+  placement?: LogoPlacementSpec | null
+  onPlacedLogo: (url: string, placement: LogoPlacementSpec) => void
+  onRemoveLogo: () => void
   brandLogoUrl: string
   brandPrimaryColor: string
   brandCompanyName: string
@@ -1821,10 +1833,10 @@ function ProductImageCell({
             </button>
             <button
               type="button"
-              onClick={() => { onChange(""); setMode(null) }}
+              onClick={() => { placement ? onRemoveLogo() : onChange(""); setMode(null) }}
               className="text-xs text-red-400 hover:text-red-300 border border-red-400/40 hover:border-red-400/70 px-3 py-1.5 rounded-lg transition-colors"
             >
-              Remove
+              {placement ? "Remove logo" : "Remove"}
             </button>
           </div>
         </div>
@@ -1859,19 +1871,29 @@ function ProductImageCell({
             <div className="border-t border-gray-100 pt-3 space-y-2">
               <BrandImageButton
                 tenantSlug={tenantSlug}
-                productImageUrl={productImageUrl}
+                productImageUrl={baseImageUrl}
                 logoUrl={brandLogoUrl}
                 primaryColor={brandPrimaryColor}
                 companyName={brandCompanyName}
-                onUseImage={(url) => { onChange(url); setMode(null) }}
+                initialPlacement={placement}
+                onUseImage={(url, pl) => { onPlacedLogo(url, pl); setMode(null) }}
               />
               <MockupGenerator
                 tenantSlug={tenantSlug}
-                productImageUrl={productImageUrl}
+                productImageUrl={baseImageUrl}
                 onUseImage={(url) => { onChange(url); setMode(null) }}
               />
             </div>
-            {value && (
+            {placement && (
+              <button
+                type="button"
+                onClick={() => { onRemoveLogo(); setMode(null) }}
+                className="w-full text-xs text-red-500 hover:text-red-700 py-1.5 border border-red-100 hover:border-red-200 rounded-lg transition-colors"
+              >
+                Remove placed logo
+              </button>
+            )}
+            {value && !placement && (
               <button
                 type="button"
                 onClick={() => { onChange(""); setMode(null) }}
@@ -2200,6 +2222,10 @@ function ProductOverridesPanel({
                         onChange={(url) => onChange(p.slug, { imageUrl: url || undefined })}
                         tenantSlug={tenantSlug}
                         productImageUrl={ov.imageUrl || p.imageUrl || ""}
+                        baseImageUrl={ov.logoPlacement?.baseImageUrl || p.imageUrl || ""}
+                        placement={ov.logoPlacement}
+                        onPlacedLogo={(url, placement) => onChange(p.slug, { imageUrl: url, logoPlacement: placement })}
+                        onRemoveLogo={() => onChange(p.slug, { imageUrl: undefined, logoPlacement: undefined })}
                         brandLogoUrl={brandLogoUrl}
                         brandPrimaryColor={brandPrimaryColor}
                         brandCompanyName={brandCompanyName}
@@ -2208,11 +2234,11 @@ function ProductOverridesPanel({
                       {ov.imageUrl && (
                         <button
                           type="button"
-                          onClick={() => onChange(p.slug, { imageUrl: undefined })}
+                          onClick={() => onChange(p.slug, { imageUrl: undefined, logoPlacement: undefined })}
                           className="text-[10px] text-red-400 hover:text-red-600 leading-none"
-                          title="Remove image override and restore original"
+                          title={ov.logoPlacement ? "Remove placed logo and restore original" : "Remove image override and restore original"}
                         >
-                          Reset
+                          {ov.logoPlacement ? "Remove logo" : "Reset"}
                         </button>
                       )}
                     </div>
