@@ -138,7 +138,7 @@ export default function MockupEditor({
     }
   )
   const [shadow, setShadow] = useState<Shadow>(initialPlacement?.shadow ?? DEFAULT_SHADOW)
-  const [showGrid, setShowGrid] = useState(true)
+  const [showGrid, setShowGrid] = useState(false)
   const capturingRef = useRef(false)
   const [dragState, setDragState] = useState<DragState | null>(null)
   const [saving, setSaving] = useState(false)
@@ -227,14 +227,16 @@ export default function MockupEditor({
       for (const fy of [1 / 3, 2 / 3]) {
         ctx.beginPath(); ctx.moveTo(0, CH * fy); ctx.lineTo(CW, CH * fy); ctx.stroke()
       }
-      // Center cross-hairs (stronger) — highlight when the logo is centered
+      // Center cross-hairs (stronger) — thicker/brighter blue when centered.
+      // Deliberately NOT green: green reads as the chroma-artifact bug.
       const centeredX = Math.abs(transform.x - CW / 2) < 1
       const centeredY = Math.abs(transform.y - CH / 2) < 1
-      ctx.lineWidth = 1.5
       ctx.setLineDash([6, 4])
-      ctx.strokeStyle = centeredX ? "rgba(34,197,94,0.9)" : "rgba(59,130,246,0.6)"
+      ctx.lineWidth = centeredX ? 2 : 1.5
+      ctx.strokeStyle = centeredX ? "rgba(37,99,235,0.95)" : "rgba(59,130,246,0.55)"
       ctx.beginPath(); ctx.moveTo(CW / 2, 0); ctx.lineTo(CW / 2, CH); ctx.stroke()
-      ctx.strokeStyle = centeredY ? "rgba(34,197,94,0.9)" : "rgba(59,130,246,0.6)"
+      ctx.lineWidth = centeredY ? 2 : 1.5
+      ctx.strokeStyle = centeredY ? "rgba(37,99,235,0.95)" : "rgba(59,130,246,0.55)"
       ctx.beginPath(); ctx.moveTo(0, CH / 2); ctx.lineTo(CW, CH / 2); ctx.stroke()
       ctx.restore()
     }
