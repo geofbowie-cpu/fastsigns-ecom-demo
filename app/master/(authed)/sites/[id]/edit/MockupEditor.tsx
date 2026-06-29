@@ -164,7 +164,11 @@ export default function MockupEditor({
     const img = new Image(); img.crossOrigin = "anonymous"
     img.onload = () => setLogoImg(img)
     img.onerror = () => setLogoImg(null)
-    img.src = entry.url
+    // SVGs rasterize with green chroma fringe on <canvas>; rasterize them to a
+    // clean PNG via Sharp server-side first. Raster logos load directly.
+    img.src = /\.svg(\?|$)/i.test(entry.url)
+      ? `/api/master/rasterize?url=${encodeURIComponent(entry.url)}`
+      : entry.url
   }, [logoLibrary, activeLogoIdx])
 
   // ── Draw ─────────────────────────────────────────────────────
