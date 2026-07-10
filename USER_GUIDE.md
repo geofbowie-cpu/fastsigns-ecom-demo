@@ -92,10 +92,48 @@ brand logo onto a product photo.
 - **Color filters** — Original / Black / White / Invert.
 - **Perspective** — Horizontal/Vertical skew sliders.
 - **Opacity** — 10–100%.
+- **Drop shadow** — toggle on, then adjust blur, offset, and color.
+- **Alignment** — turn on the **grid** for rule-of-thirds + center guides,
+  or use **Center H / V / Both**. Dragging near the middle snaps to center.
 - **Logo library** (left panel) — paste any logo URL; remove any logo
   with the × button.
 - **✓ Use as product image** — saves the composite as the product image.
-  Selection handles are never baked into the saved image.
+  Selection handles and the grid are never baked into the saved image.
+
+**Editing or removing a placed logo:** placements are no longer permanent.
+Re-open the editor on a product that already has a logo and it says **"Edit
+placed logo"** — it restores everything (position, size, shadow) on the
+original image so you can adjust it. **"Remove logo"** reverts to the original
+product image.
+
+> **Note on green specks:** if you ever see faint green marks on a saved image,
+> it's a stale browser cache — **hard-refresh** (Cmd+Shift+R) or use an
+> Incognito window, then re-save the product. Images saved before the fix keep
+> the marks until re-saved.
+
+### Storefront design
+Each site can use the **Legacy** design or the newer **v2** utility-first
+layout — pick it in the "Storefront design" section. You can switch back and
+forth anytime; it only changes how the storefront looks.
+
+### Ordering (cart + purchase orders)
+Turn on ordering per site with the **cart** option. When on, products show an
+**Add to order** button with a quantity stepper, and a cart where the customer
+reviews their order. Before submitting, they must fill in a **required contact
+section** (first name, last name, business email, phone).
+
+On submit:
+- The order is saved and the customer sees a reference number.
+- The **rep** (the site's contact email) gets a purchase-order email with the
+  items and the customer's contact info.
+- The **customer** gets a friendly confirmation email from FASTSIGNS Ely.
+
+See every order and whether its email was delivered at **Master → Orders**.
+
+Some products have **vendor minimums** (e.g. lanyards 100 in packs of 100,
+mugs 48). Those default to the minimum quantity and won't let a customer order
+below it — nothing to configure per site. To set a minimum on another product,
+use the **Minimum order qty** / **Pack increment** fields in Master → Products.
 
 ### Access control
 - **Allowed domains** — comma-separated. Empty means the portal is
@@ -104,7 +142,11 @@ brand logo onto a product photo.
   and receive a magic link.
 
 ### Site status
-- **Demo** vs **Live** — affects badges only at the moment.
+- **Demo** vs **Live**. Live shows the contact-to-order CTAs and the rep
+  contact bar to visitors. **You must set a contact email before you can
+  promote a site to Live** — the button stays greyed until you do.
+- There's no per-user ownership: any admin can edit any site, regardless of
+  who created it.
 
 Save at the bottom.
 
@@ -123,10 +165,9 @@ For example: `https://fastsigns-demos.vercel.app/reddy-ice`
 - If `Allowed domains` is empty, send the link directly — the prospect
   lands on the homepage.
 - If `Allowed domains` is set, the link redirects to the login screen
-  where they enter their work email and receive a magic link from
-  Supabase. Magic-link delivery is currently rate-limited to
-  ~4/hour — don't test repeatedly. Once a prospect is signed in,
-  their session lasts 7 days.
+  where they enter their work email and receive a magic link. Emails are
+  sent via Resend from `noreply@rfq.ely.fastsigns.com` (reliable, no
+  rate-limit). Once a prospect is signed in, their session lasts 7 days.
 
 ---
 
@@ -141,8 +182,9 @@ import batch so you can later toggle it on/off per campaign in the
 ## 7. Users
 
 `Master → Users` lists who's authorized on the master admin allow-list.
-For now we use a single shared master password — the users list is for
-future magic-link admin auth.
+Each user can sign in with **either** their own password (set a password
+per user right on this page) **or** an email magic link. Any admin can edit
+any site — there's no per-user ownership.
 
 ---
 
@@ -158,9 +200,12 @@ events to wire up.
 
 | Symptom                                       | Likely cause / fix                                       |
 | --------------------------------------------- | -------------------------------------------------------- |
-| Prospect didn't get the magic link email      | Free-tier rate limit (4/hr). Wait or check spam.         |
+| Prospect didn't get the magic link email      | Check spam. Delivery is via Resend now (no rate limit).  |
 | Magic link arrives but link doesn't work      | Redirect URL not allowlisted in Supabase dashboard.      |
-| Logo box is baked into saved product image    | Should be fixed — if it recurs, deselect before saving.  |
+| Green specks on a saved product image         | Stale browser cache — hard-refresh / Incognito, re-save. |
+| Placed logo won't change / looks stuck        | Re-open editor → "Edit placed logo" (or "Remove logo").  |
+| Can't promote a site to Live (button greyed)  | Add a contact email first, then the Live button enables. |
+| Rep didn't get a purchase-order email         | Check Master → Orders for delivery status + any error.   |
 | New changes aren't on the live site           | Vercel auto-deploy is flaky. Ask Geof to re-deploy.      |
 | "Site not found" on prospect URL              | Slug typo or campaign hasn't been created yet.           |
 

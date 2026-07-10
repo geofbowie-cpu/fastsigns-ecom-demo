@@ -16,6 +16,8 @@ Production: <https://fastsigns-demos.vercel.app>
   (`icbgcexnpuuoyagsetbn`).**
 - Tailwind CSS
 - Vercel deployment (project `fastsigns-demos`)
+- Resend (transactional email — magic links, purchase orders, confirmations)
+- Sharp (server-side image rasterize/composite)
 - Dynamic Mockups API (logo-on-product preview generation)
 - Brandfetch API (auto-pull brand identity from a domain)
 - Google Tag Manager (`GTM-NFMTDM7P`) — site-wide
@@ -43,28 +45,30 @@ Two surfaces in one Next.js app:
 | `/:slug/login`                   | Prospect           | Tenant magic-link login (when gated)       |
 | `/:slug/products`                | Prospect           | Product catalog                            |
 | `/:slug/products/[productSlug]`  | Prospect           | Product detail                             |
+| `/:slug/cart`                    | Prospect           | Cart review + submit (when cart enabled)   |
+| `/master/orders`                 | FASTSIGNS internal | Purchase orders + email delivery status    |
 
 URL rewrites in `next.config.ts` map `/:slug` → `/sites/:slug` so prospects
-get clean shareable URLs.
+get clean shareable URLs. Storefront pages render one of two designs per the
+`tenants.theme` flag (`legacy` | `v2`).
 
 ## Auth
 
-- **Master admin** — single password (`MASTER_ADMIN_PASSWORD` env var) →
-  HMAC-signed cookie. Endpoint: `POST /api/master/login`.
+- **Master admin** — per-user password (`portal_users.password_hash`, scrypt)
+  or email magic link; HMAC-signed cookie. There's also a legacy shared
+  `MASTER_ADMIN_PASSWORD`. No per-user ownership — any admin edits any site.
 - **Tenant portals** — optional. If `tenants.allowed_domains` is empty,
-  the portal is public. If it has any domain (e.g. `reddyice.com`), the
-  protected layout redirects to `/:slug/login` and the visitor receives
-  a magic link via Supabase's own email delivery (`signInWithOtp`).
-  Currently rate-limited to 4 emails/hour on free tier — see `FUTURE.md`
-  for the custom-SMTP plan.
+  the portal is public. If it has any domain, the protected layout redirects
+  to `/:slug/login` and the visitor receives a magic link. Email is sent via
+  **Resend** from a verified domain (no rate limit).
 
 ## Deploy
 
 Production deploys to the `fastsigns-demos` Vercel project. The GitHub
-auto-deploy integration is currently flaky — push to `main` then run:
+auto-deploy integration is flaky — push to `main` then run:
 
 ```bash
-vercel deploy --prod
+npx vercel --prod --yes
 ```
 
 from the repo root. The custom domain `fastsigns-demos.vercel.app` is
@@ -83,9 +87,10 @@ configured as a proper project domain (not just an alias).
 | `NEXT_PUBLIC_SITE_URL`          | Same                                       |
 | `DYNAMIC_MOCKUPS_API_KEY`       | Product-mockup generation                  |
 | `BRANDFETCH_API_KEY`            | Auto-pull brand identity                   |
-
-`RESEND_API_KEY` is **not used** — emails go through Supabase's built-in
-delivery.
+| `RESEND_API_KEY`                | Transactional email (send-only key)        |
+| `EMAIL_FROM`                    | `noreply@rfq.ely.fastsigns.com` (verified) |
+| `PO_NOTIFY_EMAIL`               | BCC audit copy of every purchase order     |
+| `UNSPLASH_ACCESS_KEY`           | Hero image picker (optional)               |
 
 ## See also
 

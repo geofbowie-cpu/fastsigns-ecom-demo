@@ -3,28 +3,27 @@
 Backlog of planned work for the FASTSIGNS Demo Builder. Items here are scoped
 but not yet started.
 
-## Custom SMTP for magic-link emails
+## ✅ Done — Email via Resend
 
-**Goal:** Replace Supabase's built-in email (4/hr rate-limited free tier) with
-custom SMTP so magic links deliver reliably from a verified `@fastsigns.com`
-or similar domain.
+Transactional email now goes through Resend (`lib/email.ts`) from the verified
+domain `noreply@rfq.ely.fastsigns.com`: master/tenant magic links, purchase-order
+emails to the rep (+ BCC audit copy via `PO_NOTIFY_EMAIL`), and buyer order
+confirmations. Master login supports both password and magic link. This
+replaces the old Supabase-built-in-mail / SMTP plan.
 
-**Effort:** ~½ day. Verify a domain in Resend/SendGrid/Mailgun (DNS records),
-add SMTP creds to the Supabase project (Dashboard → Auth → SMTP Settings),
-done.
+## Slack alert for new orders (optional)
 
-**Why later:** master login is on password for now, so this isn't blocking.
-Tenant magic links work for occasional testing but won't scale to a real
-prospect rollout without SMTP.
+**Goal:** Post a message to a Slack channel when a PO is submitted, in addition
+to the rep email + BCC + `/master/orders` record.
 
-## Restore magic-link login at root
+**Effort:** ~½ hr once an incoming-webhook URL exists. Add `SLACK_WEBHOOK_URL`
+env and a fire-and-forget POST in `app/api/cart/submit/route.ts`.
 
-**Goal:** Switch `/` back to a magic-link login (instead of master password)
-once SMTP is set up. Code is already in the repo at
-`app/api/auth/magic-link/route.ts` and `app/auth/callback/route.ts` — just
-swap the root `app/page.tsx` redirect.
+## Bulk re-composite old logo placements
 
-**Effort:** ~30 min after SMTP is live.
+**Goal:** One-time script to re-rasterize + re-composite any product images
+saved before the SVG-rasterize fix (those have baked-in green chroma fringe).
+For now they're fixed by re-saving each in the editor.
 
 ## Fix Vercel git auto-deploy
 
