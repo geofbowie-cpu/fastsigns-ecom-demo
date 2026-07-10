@@ -49,7 +49,15 @@ export default async function TenantHomePage({
       overrides: tenant.product_overrides,
     }),
   ])
-  const featured = products.filter((p) => p.featured).slice(0, 4)
+  // Admin-curated featured list wins (in its saved order, capped at 8); when
+  // none is set, fall back to the automatic featured filter (top 4 by name).
+  // `products` is already override-applied + filtered, so curated slugs that
+  // become disabled/out-of-category drop out automatically.
+  const curatedFeatured = tenant.featured_product_slugs ?? []
+  const productBySlug = new Map(products.map((p) => [p.slug, p]))
+  const featured = curatedFeatured.length > 0
+    ? curatedFeatured.map((s) => productBySlug.get(s)).filter((p): p is NonNullable<typeof p> => Boolean(p)).slice(0, 8)
+    : products.filter((p) => p.featured).slice(0, 4)
 
   const trustBadges = [b.trustBadge1, b.trustBadge2, b.trustBadge3, b.trustBadge4].filter(
     Boolean

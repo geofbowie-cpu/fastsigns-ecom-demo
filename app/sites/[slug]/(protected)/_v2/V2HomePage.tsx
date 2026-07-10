@@ -436,6 +436,34 @@ function ProductCard({
   )
 }
 
+function FeaturedRow({
+  featured,
+  slug,
+  b,
+}: {
+  featured: BankProduct[]
+  slug: string
+  b: ResolvedBrand
+}) {
+  return (
+    <section className="max-w-[1400px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+      <div className="mb-4">
+        <h2 className="font-display font-bold text-ink-900 text-xl">
+          {b.featuredSectionHeading || "Featured products"}
+        </h2>
+        {b.featuredSectionSubheading && (
+          <p className="text-sm text-ink-600 mt-0.5">{b.featuredSectionSubheading}</p>
+        )}
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        {featured.map((p) => (
+          <ProductCard key={p.slug} product={p} slug={slug} b={b} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function ProductGrid({
   products,
   cats,
@@ -535,10 +563,6 @@ export default function V2HomePage({
   featured,
   isAdmin,
 }: V2HomePageProps) {
-  // Suppress unused var warning — featured is accepted for API parity but
-  // the v2 layout skips a dedicated featured row in favour of the dense grid.
-  void featured
-
   return (
     <div className={cn(v2FontVars, "font-body bg-ink-50 min-h-screen flex flex-col")}>
       {/* 1. Admin bar */}
@@ -555,6 +579,9 @@ export default function V2HomePage({
 
       {/* 5. Announcement banner */}
       <AnnouncementBanner b={b} slug={slug} />
+
+      {/* 5b. Featured products (admin-curated order) */}
+      {featured.length > 0 && <FeaturedRow featured={featured} slug={slug} b={b} />}
 
       {/* 6. Main browse area */}
       <main className="flex-1 max-w-[1400px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">

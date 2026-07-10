@@ -78,6 +78,7 @@ export default function EditSiteForm({
   const [requireLogin, setRequireLogin] = useState(tenant.require_login ?? false)
   const [enableCart, setEnableCart] = useState(tenant.enable_cart ?? false)
   const [theme, setTheme] = useState<"legacy" | "v2">(tenant.theme ?? "legacy")
+  const [featuredSlugs, setFeaturedSlugs] = useState<string[]>(tenant.featured_product_slugs ?? [])
   // Delete confirmation
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteSlugInput, setDeleteSlugInput] = useState("")
@@ -255,6 +256,7 @@ export default function EditSiteForm({
           require_login: requireLogin,
           enable_cart: enableCart,
           theme,
+          featured_product_slugs: featuredSlugs,
           allowed_domains: allowedDomains
             .split(",")
             .map((d) => d.trim().toLowerCase().replace(/^@/, ""))
@@ -321,7 +323,7 @@ export default function EditSiteForm({
       <nav className="sticky top-0 z-10 -mx-1 flex flex-wrap gap-1 bg-white/90 backdrop-blur-sm py-2 px-1 border-b border-gray-100">
         {[
           "Identity", "Brand", "Footer",
-          "Categories", "Custom products", "Product overrides",
+          "Categories", "Custom products", "Product overrides", "Featured products",
           "Storefront design", "Live portal", "Access control", "Ordering",
         ].map((s) => (
           <a
@@ -674,6 +676,21 @@ export default function EditSiteForm({
           brandLogoUrl={logoImage}
           brandPrimaryColor={primaryColor}
           brandCompanyName={name}
+        />
+      </Section>
+
+      {/* Featured products */}
+      <Section
+        title="Featured products"
+        hint="Choose and order the products shown in the Featured section (v2 sites show up to 8). Leave empty to auto-feature products flagged Featured."
+      >
+        <FeaturedProductsManager
+          allProducts={allProducts}
+          enabledCategories={Array.from(enabled)}
+          enabledImportTags={Array.from(importTags)}
+          overrides={productOverrides}
+          value={featuredSlugs}
+          onChange={setFeaturedSlugs}
         />
       </Section>
 
@@ -1771,6 +1788,96 @@ function MockupGenerator({
           )}
         </>
       )}
+    </div>
+  )
+}
+
+// ── Featured products manager (choose + order) ────────────────
+function FeaturedProductsManager({
+  allProducts,
+  enabledCategories,
+  enabledImportTags,
+  overrides,
+  value,
+  onChange,
+}: {
+  allProducts: DbProduct[]
+  enabledCategories: string[]
+  enabledImportTags: string[]
+  overrides: ProductOverrides
+  value: string[]
+  onChange: (slugs: string[]) => void
+}) {
+  const [q, setQ] = useState("")
+
+  // Products actually visible on this site (mirrors getProducts filtering).
+  const candidates = allProducts.filter((p) => {
+    if (overrides[p.slug]?.disabled) return false
+    if (!p.import_tag) {
+      return enabledCategories.length === 0 || enabledCategories.includes(p.category)
+    }
+    return enabledImportTags.includes(p.import_tag)
+  })
+  const bySlug = new Map(candidates.map((p) => [p.slug, p]))
+  const selected = value.map((s) => bySlug.get(s)).filter((p): p is DbProduct => Boolean(p))
+
+  const query = q.trim().toLowerCase()
+  const available = candidates
+    .filter((p) => !value.includes(p.slug))
+    .filter((p) => !query || p.name.toLowerCase().includes(query) || p.category.toLowerCase().includes(query))
+
+  function move(idx: number, dir: -1 | 1) {
+    const j = idx + dir
+    if (j < 0 || j >= value.length) return
+    const next = [...value]
+    const tmp = next[idx]; next[idx] = next[j]; next[j] = tmp
+    onChange(next)
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <p className="text-xs font-semibold text-gray-600 mb-1.5">
+          Featured order{value.length > 0 && <span className="text-gray-400 font-normal"> ({value.length})</span>}
+        </p>
+        {selected.length === 0 ? (
+          <p className="text-xs text-gray-400 italic">None selected — the site auto-features products flagged &ldquo;Featured.&rdquo;</p>
+        ) : (
+          <div className="space-y-1.5">
+            {selected.map((p, i) => (
+              <div key={p.slug} className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5">
+                <span className="text-[11px] font-mono text-gray-400 w-4 text-right">{i + 1}</span>
+                <span className="flex-1 text-xs text-gray-800 truncate">{p.name}</span>
+                <div className="flex items-center gap-0.5">
+                  <button type="button" onClick={() => move(i, -1)} disabled={i === 0}
+                    className="w-6 h-6 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30" aria-label="Move up">↑</button>
+                  <button type="button" onClick={() => move(i, 1)} disabled={i === selected.length - 1}
+                    className="w-6 h-6 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30" aria-label="Move down">↓</button>
+                  <button type="button" onClick={() => onChange(value.filter((s) => s !== p.slug))}
+                    className="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-white hover:bg-red-500 text-xs font-bold" aria-label="Remove">✕</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search products to feature…"
+          className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2" />
+        <div className="max-h-52 overflow-y-auto border border-gray-100 rounded-lg divide-y divide-gray-50">
+          {available.length === 0 ? (
+            <p className="text-xs text-gray-400 px-3 py-2">No matching products.</p>
+          ) : available.map((p) => (
+            <button key={p.slug} type="button" onClick={() => onChange([...value, p.slug])}
+              className="w-full flex items-center gap-2 px-2.5 py-1.5 text-left hover:bg-blue-50">
+              <span className="text-blue-600 font-bold text-xs">+</span>
+              <span className="flex-1 text-xs text-gray-700 truncate">{p.name}</span>
+              <span className="text-[10px] text-gray-400 shrink-0">{p.category}</span>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

@@ -89,6 +89,7 @@ export type Tenant = {
   require_login: boolean
   enable_cart: boolean
   theme: "legacy" | "v2"
+  featured_product_slugs: string[]
   created_at: string
   updated_at: string
 }
