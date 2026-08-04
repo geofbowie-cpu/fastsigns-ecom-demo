@@ -94,7 +94,7 @@ export default async function AnalyticsPage({
                 {summary.perSite.map((s) => (
                   <tr key={s.slug} className="hover:bg-gray-50">
                     <td className="px-4 py-2.5">
-                      <Link href={`/sites/${s.slug}`} className="text-gray-900 hover:underline font-medium">
+                      <Link href={`/master/analytics/${s.slug}?days=${days}`} className="text-gray-900 hover:underline font-medium">
                         {nameBySlug.get(s.slug) ?? s.slug}
                       </Link>
                     </td>
