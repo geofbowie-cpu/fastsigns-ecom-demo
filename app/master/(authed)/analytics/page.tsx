@@ -35,6 +35,15 @@ export default async function AnalyticsPage({
   const [summary, tenants] = await Promise.all([getAnalytics(days), listTenants()])
   const nameBySlug = new Map(tenants.map((t) => [t.slug, t.name]))
 
+  // Always list every site — sites with traffic first, then the rest at zero,
+  // so the table is useful before any traffic accumulates.
+  const withTraffic = new Set(summary.perSite.map((s) => s.slug))
+  const zeroSites = tenants
+    .filter((t) => !withTraffic.has(t.slug))
+    .map((t) => ({ slug: t.slug, views: 0, productViews: 0, clicks: 0, searches: 0, quotes: 0 }))
+    .sort((a, b) => (nameBySlug.get(a.slug) ?? a.slug).localeCompare(nameBySlug.get(b.slug) ?? b.slug))
+  const allSites = [...summary.perSite, ...zeroSites]
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
@@ -69,12 +78,14 @@ export default async function AnalyticsPage({
         <StatCard label="Total events" value={summary.totalEvents} />
       </div>
 
-      {summary.totalEvents === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400">
-          No traffic recorded yet in this range. Data appears as prospects visit the sites.
+      {summary.totalEvents === 0 && (
+        <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-sm text-blue-800">
+          No traffic recorded yet in this range. Numbers fill in as prospects visit the sites —
+          your own admin previews are excluded, so browsing while logged in won&rsquo;t show here.
         </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Per-site table */}
           <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-100">
@@ -91,7 +102,7 @@ export default async function AnalyticsPage({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {summary.perSite.map((s) => (
+                {allSites.map((s) => (
                   <tr key={s.slug} className="hover:bg-gray-50">
                     <td className="px-4 py-2.5">
                       <Link href={`/master/analytics/${s.slug}?days=${days}`} className="text-gray-900 hover:underline font-medium">
@@ -127,8 +138,7 @@ export default async function AnalyticsPage({
               </ol>
             )}
           </div>
-        </div>
-      )}
+      </div>
     </div>
   )
 }
