@@ -7,6 +7,7 @@ import { isMasterAuthed } from "@/lib/master-auth"
 import { resolveBrand } from "@/lib/resolve-brand"
 import CartProvider from "./_cart/CartProvider"
 import CartButton from "./_cart/CartButton"
+import PageViewTracker from "./_analytics/PageViewTracker"
 
 export async function generateMetadata({
   params,
@@ -39,6 +40,7 @@ export default async function ProtectedSiteLayout({
   if (!tenant) return <>{children}</>
 
   const b = resolveBrand(tenant.brand)
+  const isAdmin = await isMasterAuthed()
 
   // Cart/ordering is a per-site opt-in (off by default, incl. Reddy Ice).
   const content = tenant.enable_cart ? (
@@ -53,6 +55,7 @@ export default async function ProtectedSiteLayout({
   const wrap = (
     <>
       {content}
+      <PageViewTracker slug={slug} disabled={isAdmin} />
       {isDemo && <DemoBanner />}
     </>
   )
@@ -61,7 +64,7 @@ export default async function ProtectedSiteLayout({
   if (!tenant.require_login) return wrap
 
   // Master admins can always preview any site
-  if (await isMasterAuthed()) return wrap
+  if (isAdmin) return wrap
 
   // Check tenant session cookie
   const domains = tenant.allowed_domains ?? []

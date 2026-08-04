@@ -9,6 +9,31 @@ export function trackEvent(event: string, payload?: EventPayload) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const dl = ((window as any).dataLayer = (window as any).dataLayer ?? [])
   dl.push({ event, ...payload })
+  // Also persist to our own store for in-app analytics (fire-and-forget).
+  sendToStore(event, payload)
+}
+
+// Mirror the event into our DB via a lightweight beacon. Only fires when a
+// tenant_slug is present (i.e. real storefront events, not generic ones).
+function sendToStore(event: string, payload?: EventPayload) {
+  try {
+    const tenant_slug = payload?.tenant_slug
+    if (typeof tenant_slug !== "string" || !tenant_slug) return
+    const body = JSON.stringify({ event, tenant_slug, props: payload ?? {} })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const nav = navigator as any
+    if (nav?.sendBeacon) {
+      nav.sendBeacon("/api/track", new Blob([body], { type: "application/json" }))
+    } else {
+      fetch("/api/track", { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true })
+    }
+  } catch {
+    /* analytics must never break the page */
+  }
+}
+
+export function trackPageView(path: string, tenantSlug: string) {
+  trackEvent("page_view", { path, tenant_slug: tenantSlug })
 }
 
 // ── Named helpers ─────────────────────────────────────────────

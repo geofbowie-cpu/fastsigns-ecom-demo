@@ -76,6 +76,14 @@ export default async function AuthedLayout({
             Orders
           </NavLink>
 
+          <NavLink href="/master/analytics">
+            {/* Bar chart icon */}
+            <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v18h18M9 17V9m4 8V5m4 12v-6" />
+            </svg>
+            Analytics
+          </NavLink>
+
           <NavLink href="/master/users">
             {/* Users icon */}
             <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
