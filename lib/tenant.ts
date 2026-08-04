@@ -151,6 +151,53 @@ export async function createTenant(input: TenantInput): Promise<Tenant> {
   return data as Tenant
 }
 
+/**
+ * Clones a site: copies all config (brand, categories, product overrides,
+ * theme, cart, featured list, access) into a new tenant with a new slug/name,
+ * as a fresh `demo`. Does NOT copy orders/visitors (separate tables) or the
+ * id/timestamps. Image URLs are shared — no storage duplication needed.
+ */
+export async function cloneTenant(
+  sourceId: string,
+  opts: { name: string; slug: string }
+): Promise<Tenant> {
+  const admin = adminClient()
+  const { data: src, error: srcErr } = await admin
+    .from("tenants")
+    .select("*")
+    .eq("id", sourceId)
+    .single()
+  if (srcErr || !src) throw new Error("Source site not found")
+
+  const { data, error } = await admin
+    .from("tenants")
+    .insert({
+      slug: opts.slug.toLowerCase().trim(),
+      name: opts.name.trim(),
+      brand: src.brand ?? {},
+      enabled_categories: src.enabled_categories ?? [],
+      product_overrides: src.product_overrides ?? {},
+      import_tags: src.import_tags ?? [],
+      theme: src.theme ?? "legacy",
+      enable_cart: src.enable_cart ?? false,
+      featured_product_slugs: src.featured_product_slugs ?? [],
+      allowed_domains: src.allowed_domains ?? [],
+      require_login: src.require_login ?? false,
+      admin_email: src.admin_email ?? null,
+      status: "demo",
+      archived: false,
+    })
+    .select()
+    .single()
+  if (error) {
+    if (error.code === "23505" || /duplicate|unique/i.test(error.message)) {
+      throw new Error(`Slug "${opts.slug}" is already taken`)
+    }
+    throw new Error(error.message)
+  }
+  return data as Tenant
+}
+
 export async function updateTenant(
   id: string,
   patch: Partial<TenantInput> & { archived?: boolean; status?: "demo" | "live" }

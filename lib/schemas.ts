@@ -9,6 +9,11 @@ export const TenantCreateSchema = z.object({
   admin_email: z.string().email().nullable().optional(),
 })
 
+export const TenantCloneSchema = z.object({
+  slug: z.string().min(1).max(60).regex(/^[a-z0-9-]+$/, { message: "slug must be lowercase alphanumeric + hyphens" }),
+  name: z.string().min(1).max(120),
+})
+
 export const TenantPatchSchema = z.object({
   name: z.string().min(1).max(120).optional(),
   brand: z.record(z.string(), z.unknown()).optional(),
