@@ -10,5 +10,14 @@ create table if not exists ecom_demos.site_events (
 create index if not exists site_events_tenant_created_idx
   on ecom_demos.site_events (tenant_slug, created_at desc);
 create index if not exists site_events_event_idx on ecom_demos.site_events (event);
--- Lock out direct anon/PostgREST access; writes go through our service-role API.
+
+-- REQUIRED: tables created via raw SQL do NOT inherit role grants automatically,
+-- so PostgREST (supabase-js) inserts fail with "permission denied" (42501) until
+-- the API role is granted. All access here is via the service-role adminClient.
+grant select, insert, update, delete on ecom_demos.site_events to service_role;
+
+-- Belt-and-suspenders: RLS on (service_role bypasses; anon has no grant anyway).
 alter table ecom_demos.site_events enable row level security;
+
+-- PostgREST caches the schema; reload so it sees the new table + grants.
+notify pgrst, 'reload schema';

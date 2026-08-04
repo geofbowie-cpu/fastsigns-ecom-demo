@@ -155,6 +155,13 @@ or removed instead of being a permanent flat composite.
   via the Management API (`PATCH /v1/projects/{ref}/postgrest`).
   Otherwise PostgREST returns `PGRST002` on all requests until config
   is fixed.
+- **New tables created via raw SQL need an explicit GRANT** or the app's
+  PostgREST/supabase-js calls fail with `permission denied` (42501) even though
+  direct `supabase db query` works (it uses a privileged connection). After
+  `create table ecom_demos.foo (...)`, run
+  `grant select, insert, update, delete on ecom_demos.foo to service_role;`
+  then `notify pgrst, 'reload schema';`. All app DB access is via the
+  service-role `adminClient`, so granting `service_role` is sufficient.
 - **Vercel git auto-deploy isn't firing.** Pushes to `main` don't
   trigger deploys. Use `npx vercel --prod --yes` manually (auto-aliases the
   production domain). The `git-main` Vercel alias is a stale pointer — ignore it.
