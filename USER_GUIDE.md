@@ -135,6 +135,33 @@ mugs 48). Those default to the minimum quantity and won't let a customer order
 below it — nothing to configure per site. To set a minimum on another product,
 use the **Minimum order qty** / **Pack increment** fields in Master → Products.
 
+### Popup
+A marketing overlay for the site — off by default. Turn it on in the **Popup**
+section and pick one of two modes:
+
+- **Built-in modal** — we build the popup for you. Fill in a headline, body
+  copy, an optional image, a button label and link, and the dismiss text. It
+  picks up the site's brand colors. Use **Preview popup** to see it without
+  saving.
+- **Pasted code** — paste the embed snippet from HubSpot (or whatever tool the
+  campaign uses) and we drop it onto every page of the site; the snippet draws
+  its own popup, so the content fields above don't apply. Only paste code from a
+  source you trust — it runs as-is on the live site. Pasted code can't be
+  previewed in the admin; save, then open the site to check it.
+
+Then choose the behaviour:
+
+- **Show it** — after a delay (default 5 seconds), immediately on load, after
+  the visitor scrolls a set percentage, or on exit intent (when their mouse
+  leaves the top of the window). Exit intent falls back to the delay on phones
+  and tablets, which have no exit intent.
+- **Show again after** — how many days before a visitor who has already seen it
+  sees it again. Default 7. Set 0 to show it on every page view.
+
+The popup appears on every page of that site. While you're signed in as an
+admin it always shows and is never counted, so you can keep previewing it —
+that also means your own views won't skew the numbers.
+
 ### Access control
 - **Allowed domains** — comma-separated. Empty means the portal is
   public (anyone with the URL gets in). Non-empty (e.g. `reddyice.com,
@@ -193,6 +220,11 @@ any site — there's no per-user ownership.
 Google Tag Manager (`GTM-NFMTDM7P`) fires on every page including
 prospect sites and the master admin. Talk to marketing about which
 events to wire up.
+
+**Master → Analytics** also has its own in-app numbers per site: page views,
+product views, clicks, searches, and popup views. Click a site for its detail
+view, which breaks the popup down into shown / CTA clicks / dismissed and a
+click-through rate. Admin previews are excluded from all of it.
 
 ---
 

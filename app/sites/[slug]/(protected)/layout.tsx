@@ -8,6 +8,8 @@ import { resolveBrand } from "@/lib/resolve-brand"
 import CartProvider from "./_cart/CartProvider"
 import CartButton from "./_cart/CartButton"
 import PageViewTracker from "./_analytics/PageViewTracker"
+import SitePopup from "./_popup/SitePopup"
+import { resolvePopup } from "@/lib/popup"
 
 export async function generateMetadata({
   params,
@@ -52,10 +54,23 @@ export default async function ProtectedSiteLayout({
     children
   )
 
+  // Marketing popup — opt-in per site. Admins always see it (for QA) but never
+  // burn their own frequency cap or log events.
+  const popup = resolvePopup(tenant.popup)
+
   const wrap = (
     <>
       {content}
       <PageViewTracker slug={slug} disabled={isAdmin} />
+      {popup.enabled && (
+        <SitePopup
+          slug={slug}
+          popup={popup}
+          buttonColor={b.buttonColor}
+          buttonTextColor={b.buttonTextColor}
+          preview={isAdmin}
+        />
+      )}
       {isDemo && <DemoBanner />}
     </>
   )

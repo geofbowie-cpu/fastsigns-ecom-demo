@@ -14,6 +14,24 @@ export const TenantCloneSchema = z.object({
   name: z.string().min(1).max(120),
 })
 
+// Marketing popup (tenants.popup jsonb). embed_code is raw third-party markup —
+// master-admin-only by construction, so it is length-bounded but not sanitised.
+export const TenantPopupSchema = z.object({
+  enabled: z.boolean(),
+  mode: z.enum(["embed", "modal"]),
+  embedCode: z.string().max(20000),
+  heading: z.string().max(160),
+  body: z.string().max(1000),
+  imageUrl: z.string().max(2000),
+  ctaText: z.string().max(60),
+  ctaUrl: z.string().max(2000),
+  dismissText: z.string().max(60),
+  trigger: z.enum(["load", "delay", "scroll", "exit"]),
+  delaySeconds: z.number().int().min(0).max(300),
+  scrollPercent: z.number().int().min(1).max(100),
+  frequencyDays: z.number().int().min(0).max(365),
+})
+
 export const TenantPatchSchema = z.object({
   name: z.string().min(1).max(120).optional(),
   brand: z.record(z.string(), z.unknown()).optional(),
@@ -28,6 +46,7 @@ export const TenantPatchSchema = z.object({
   archived: z.boolean().optional(),
   theme: z.enum(["legacy", "v2"]).optional(),
   featured_product_slugs: z.array(z.string()).optional(),
+  popup: TenantPopupSchema.optional(),
 })
 
 // ── Cart → purchase order ────────────────────────────────────

@@ -145,6 +145,26 @@ export default async function SiteAnalyticsPage({
                 <li className="px-4 py-2.5 flex justify-between"><span className="text-gray-600">Quote requests</span><span className="font-semibold text-gray-900">{detail.quotes}</span></li>
               </ul>
             </div>
+
+            {/* Popup */}
+            {detail.popup.shown > 0 && (
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <h2 className="text-sm font-bold text-gray-800">Popup</h2>
+                </div>
+                <ul className="divide-y divide-gray-100 text-sm">
+                  <li className="px-4 py-2.5 flex justify-between"><span className="text-gray-600">Shown</span><span className="font-semibold text-gray-900">{detail.popup.shown}</span></li>
+                  <li className="px-4 py-2.5 flex justify-between"><span className="text-gray-600">CTA clicks</span><span className="font-semibold text-gray-900">{detail.popup.ctaClicks}</span></li>
+                  <li className="px-4 py-2.5 flex justify-between"><span className="text-gray-600">Dismissed</span><span className="font-semibold text-gray-900">{detail.popup.dismissed}</span></li>
+                  <li className="px-4 py-2.5 flex justify-between">
+                    <span className="text-gray-600">Click-through</span>
+                    <span className="font-semibold text-gray-900">
+                      {Math.round((detail.popup.ctaClicks / detail.popup.shown) * 100)}%
+                    </span>
+                  </li>
+                </ul>
+              </div>
+            )}
           </div>
         </>
       )}

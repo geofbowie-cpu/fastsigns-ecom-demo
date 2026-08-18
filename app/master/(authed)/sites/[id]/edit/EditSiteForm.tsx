@@ -11,6 +11,8 @@ import MockupEditor from "./MockupEditor"
 import CategoryIcon from "@/components/CategoryIcon"
 import IconPicker from "../../../_shared/IconPicker"
 import UnsplashPicker from "../../../_shared/UnsplashPicker"
+import PopupEditor from "./PopupEditor"
+import { resolvePopup, type TenantPopup } from "@/lib/popup"
 
 // ── Dynamic Mockups types ──────────────────────────────────────
 type DmSmartObject = { uuid: string; name: string }
@@ -79,6 +81,7 @@ export default function EditSiteForm({
   const [enableCart, setEnableCart] = useState(tenant.enable_cart ?? false)
   const [theme, setTheme] = useState<"legacy" | "v2">(tenant.theme ?? "legacy")
   const [featuredSlugs, setFeaturedSlugs] = useState<string[]>(tenant.featured_product_slugs ?? [])
+  const [popup, setPopup] = useState<TenantPopup>(resolvePopup(tenant.popup))
   // Delete confirmation
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteSlugInput, setDeleteSlugInput] = useState("")
@@ -257,6 +260,7 @@ export default function EditSiteForm({
           enable_cart: enableCart,
           theme,
           featured_product_slugs: featuredSlugs,
+          popup,
           allowed_domains: allowedDomains
             .split(",")
             .map((d) => d.trim().toLowerCase().replace(/^@/, ""))
@@ -324,7 +328,7 @@ export default function EditSiteForm({
         {[
           "Identity", "Brand", "Footer",
           "Categories", "Custom products", "Product overrides", "Featured products",
-          "Storefront design", "Live portal", "Access control", "Ordering",
+          "Storefront design", "Live portal", "Access control", "Ordering", "Popup",
         ].map((s) => (
           <a
             key={s}
@@ -827,6 +831,20 @@ export default function EditSiteForm({
             Set a contact email in the Brand section, and configure allowed domains under Access control so customers can sign in to submit.
           </p>
         )}
+      </Section>
+
+      {/* Marketing popup */}
+      <Section
+        title="Popup"
+        hint="A marketing overlay on this site — either a pasted HubSpot-style snippet or a built-in modal we render. Off by default."
+      >
+        <PopupEditor
+          value={popup}
+          onChange={(patch) => setPopup((prev) => ({ ...prev, ...patch }))}
+          slug={tenant.slug}
+          buttonColor={buttonColor}
+          buttonTextColor={buttonTextColor}
+        />
       </Section>
 
       {/* Danger zone */}

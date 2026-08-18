@@ -14,6 +14,9 @@ const ALLOWED = new Set([
   "search",
   "quote_request",
   "category_click",
+  "popup_shown",
+  "popup_dismissed",
+  "popup_cta_click",
 ])
 
 export async function POST(req: Request) {

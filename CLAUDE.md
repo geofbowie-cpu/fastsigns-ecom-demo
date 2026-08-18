@@ -71,7 +71,8 @@ All transactional email goes through **Resend** in `lib/email.ts`.
 - `tenants` — id, slug, name, brand (jsonb), allowed_domains text[],
   enabled_categories[], product_overrides jsonb, admin_email, status,
   import_tags[], **enable_cart bool** (default false; Reddy Ice always off),
-  **theme text** (`legacy` | `v2`, default `legacy`)
+  **theme text** (`legacy` | `v2`, default `legacy`), **popup jsonb**
+  (marketing popup config; `{}` / `{"enabled": false}` = off — see `lib/popup.ts`)
 - `tenant_visitors` — tenant_id, email, last_seen_at, sign_in_count
 - `portal_users` — master admin allow-list; **password_hash** (scrypt)
 - `products` — product catalog; **min_order_qty int**, **order_increment int**
@@ -104,6 +105,10 @@ or removed instead of being a permanent flat composite.
   during the `toDataURL` capture. **SVG logos are rasterized server-side via
   `/api/master/rasterize`** before drawing — see the green-artifact gotcha.
 - `app/master/(authed)/orders/page.tsx` — admin Orders view (PO delivery status)
+- Popup: `lib/popup.ts` (shape + `resolvePopup`), `components/popup/PopupModal.tsx`
+  (presentational, shared by storefront + admin preview),
+  `app/sites/[slug]/(protected)/_popup/SitePopup.tsx` (trigger, frequency cap,
+  embed injection, tracking), `app/master/(authed)/sites/[id]/edit/PopupEditor.tsx`
 - `app/api/master/rasterize/route.ts` — Sharp SVG→PNG rasterizer (SSRF-guarded)
 - Cart/PO flow: `app/sites/[slug]/(protected)/_cart/*` (CartProvider,
   AddToCartButton, CartButton), `.../cart/CartClient.tsx` (review + required
@@ -141,6 +146,13 @@ or removed instead of being a permanent flat composite.
   enforced client- and server-side.
 - **Logo placement editor** — drop shadow, centering grid + center buttons +
   snap, and editable/removable placements. SVG logos rasterized via Sharp.
+- **Marketing popup** — opt-in per site (`tenants.popup.enabled`), edited in the
+  edit form's "Popup" section. Two modes: `embed` (paste a HubSpot-style
+  snippet, injected verbatim — their script draws its own overlay) or `modal`
+  (headline / body / image / CTA button rendered by `PopupModal` in the site's
+  brand colors). Trigger is `load` | `delay` | `scroll` | `exit`; a
+  `frequencyDays` cooldown is kept in `localStorage`. Fires `popup_shown`,
+  `popup_dismissed`, `popup_cta_click` into `site_events`.
 
 ## Gotchas
 
@@ -180,6 +192,13 @@ or removed instead of being a permanent flat composite.
   every line against `products.min_order_qty`/`order_increment` via
   `lib/order-qty.ts` — client checks are not authoritative.
 - **`enable_cart` defaults false; never enable Reddy Ice** (live marketing).
+- **Popup embed code runs verbatim on the tenant site.** It's a master-admin-only
+  field, so it's length-bounded but deliberately not sanitised — pasting a hostile
+  snippet is equivalent to owning the page. `innerHTML` doesn't execute `<script>`,
+  so `SitePopup` rebuilds each script node; don't "simplify" that away.
+- **Admin previews always see the popup and never log popup events** (the layout
+  passes `preview={isAdmin}`), so previewing doesn't burn the frequency cap or
+  inflate analytics. Same rationale as `PageViewTracker`'s `disabled`.
 - **GTM is loaded site-wide** including `/master/*`. Add a GTM exclusion
   if you need clean analytics.
 - **Two Vercel projects existed earlier** (`fastsigns-demos` and

@@ -14,6 +14,8 @@ export type SiteStat = {
   clicks: number // cta + email + phone
   searches: number
   quotes: number
+  popupShown: number
+  popupClicks: number
 }
 export type TopProduct = { slug: string; name: string; views: number }
 export type AnalyticsSummary = {
@@ -46,7 +48,7 @@ export async function getAnalytics(days = 30): Promise<AnalyticsSummary> {
   for (const r of rows) {
     const s =
       site.get(r.tenant_slug) ??
-      { slug: r.tenant_slug, views: 0, productViews: 0, clicks: 0, searches: 0, quotes: 0 }
+      { slug: r.tenant_slug, views: 0, productViews: 0, clicks: 0, searches: 0, quotes: 0, popupShown: 0, popupClicks: 0 }
     if (r.event === "page_view") {
       s.views++
       totalViews++
@@ -65,6 +67,10 @@ export async function getAnalytics(days = 30): Promise<AnalyticsSummary> {
       s.searches++
     } else if (r.event === "quote_request") {
       s.quotes++
+    } else if (r.event === "popup_shown") {
+      s.popupShown++
+    } else if (r.event === "popup_cta_click") {
+      s.popupClicks++
     }
     site.set(r.tenant_slug, s)
   }
@@ -89,6 +95,7 @@ export type SiteDetail = {
   searches: number
   quotes: number
   clickBreakdown: { cta: number; email: number; phone: number }
+  popup: { shown: number; dismissed: number; ctaClicks: number }
   topProducts: TopProduct[]
   daily: DayPoint[]
   totalEvents: number
@@ -110,6 +117,7 @@ export async function getSiteAnalytics(slug: string, days = 30): Promise<SiteDet
   const byDay = new Map<string, number>()
   let views = 0, productViews = 0, searches = 0, quotes = 0
   let cta = 0, email = 0, phone = 0
+  let popupShown = 0, popupDismissed = 0, popupCta = 0
 
   for (const r of rows) {
     switch (r.event) {
@@ -134,6 +142,9 @@ export async function getSiteAnalytics(slug: string, days = 30): Promise<SiteDet
       case "phone_click": phone++; break
       case "search": searches++; break
       case "quote_request": quotes++; break
+      case "popup_shown": popupShown++; break
+      case "popup_dismissed": popupDismissed++; break
+      case "popup_cta_click": popupCta++; break
     }
   }
 
@@ -154,6 +165,7 @@ export async function getSiteAnalytics(slug: string, days = 30): Promise<SiteDet
     quotes,
     clicks: cta + email + phone,
     clickBreakdown: { cta, email, phone },
+    popup: { shown: popupShown, dismissed: popupDismissed, ctaClicks: popupCta },
     topProducts: Array.from(products.values()).sort((a, b) => b.views - a.views).slice(0, 15),
     daily,
     totalEvents: rows.length,

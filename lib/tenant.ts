@@ -3,6 +3,7 @@
 
 import { adminClient, publicClient } from "@/lib/supabase"
 import type { ProductOverrides } from "@/lib/product-bank"
+import type { TenantPopup } from "@/lib/popup"
 
 export type TenantBrand = {
   // Identity
@@ -89,6 +90,8 @@ export type Tenant = {
   require_login: boolean
   enable_cart: boolean
   theme: "legacy" | "v2"
+  /** Marketing popup config — always read through resolvePopup(). */
+  popup: Partial<TenantPopup> | null
   featured_product_slugs: string[]
   created_at: string
   updated_at: string
@@ -180,6 +183,7 @@ export async function cloneTenant(
       import_tags: src.import_tags ?? [],
       theme: src.theme ?? "legacy",
       enable_cart: src.enable_cart ?? false,
+      popup: src.popup ?? {},
       featured_product_slugs: src.featured_product_slugs ?? [],
       allowed_domains: src.allowed_domains ?? [],
       require_login: src.require_login ?? false,

@@ -62,6 +62,18 @@ export function trackCategoryClick(categorySlug: string, categoryName: string, t
   trackEvent("category_click", { category_slug: categorySlug, category_name: categoryName, tenant_slug: tenantSlug })
 }
 
+export function trackPopupShown(tenantSlug: string, mode: string, trigger: string) {
+  trackEvent("popup_shown", { tenant_slug: tenantSlug, mode, trigger })
+}
+
+export function trackPopupDismissed(tenantSlug: string, how: string) {
+  trackEvent("popup_dismissed", { tenant_slug: tenantSlug, how })
+}
+
+export function trackPopupCtaClick(tenantSlug: string, label: string, destination: string) {
+  trackEvent("popup_cta_click", { tenant_slug: tenantSlug, label, destination })
+}
+
 export function trackSearch(query: string, resultCount: number, tenantSlug: string) {
   trackEvent("search", { query, result_count: resultCount, tenant_slug: tenantSlug })
 }

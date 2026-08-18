@@ -40,7 +40,7 @@ export default async function AnalyticsPage({
   const withTraffic = new Set(summary.perSite.map((s) => s.slug))
   const zeroSites = tenants
     .filter((t) => !withTraffic.has(t.slug))
-    .map((t) => ({ slug: t.slug, views: 0, productViews: 0, clicks: 0, searches: 0, quotes: 0 }))
+    .map((t) => ({ slug: t.slug, views: 0, productViews: 0, clicks: 0, searches: 0, quotes: 0, popupShown: 0, popupClicks: 0 }))
     .sort((a, b) => (nameBySlug.get(a.slug) ?? a.slug).localeCompare(nameBySlug.get(b.slug) ?? b.slug))
   const allSites = [...summary.perSite, ...zeroSites]
 
@@ -99,6 +99,7 @@ export default async function AnalyticsPage({
                   <th className="px-4 py-2.5 font-semibold text-right">Product views</th>
                   <th className="px-4 py-2.5 font-semibold text-right">Clicks</th>
                   <th className="px-4 py-2.5 font-semibold text-right">Searches</th>
+                  <th className="px-4 py-2.5 font-semibold text-right">Popup views</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -113,6 +114,7 @@ export default async function AnalyticsPage({
                     <td className="px-4 py-2.5 text-right text-gray-600">{s.productViews.toLocaleString()}</td>
                     <td className="px-4 py-2.5 text-right text-gray-600">{s.clicks.toLocaleString()}</td>
                     <td className="px-4 py-2.5 text-right text-gray-600">{s.searches.toLocaleString()}</td>
+                    <td className="px-4 py-2.5 text-right text-gray-600">{s.popupShown.toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
