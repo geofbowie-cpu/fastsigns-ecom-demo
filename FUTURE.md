@@ -11,6 +11,23 @@ emails to the rep (+ BCC audit copy via `PO_NOTIFY_EMAIL`), and buyer order
 confirmations. Master login supports both password and magic link. This
 replaces the old Supabase-built-in-mail / SMTP plan.
 
+## ✅ Done — Per-site marketing popup
+
+Opt-in per site via `tenants.popup` (jsonb; see `lib/popup.ts`), edited in the
+"Popup" section of the site edit form. Either a pasted third-party snippet
+(HubSpot form embed etc., framed in our own overlay by default) or a built-in
+modal we render in the site's brand colors. Trigger is load / delay / scroll
+depth / exit intent, with a `localStorage` frequency cap in days. Views,
+dismissals and CTA clicks land in `site_events` and surface under
+`/master/analytics`.
+
+**Known limits / possible follow-ups:**
+- It shows on every page of the site — no per-page or per-category targeting.
+- No A/B testing or scheduling (start/end dates).
+- Pasted embed code can't be previewed in the admin, only on the live site.
+- Embed mode only logs `popup_shown` — dismissals and conversions happen inside
+  the third party's own UI, so we can't see them.
+
 ## Slack alert for new orders (optional)
 
 **Goal:** Post a message to a Slack channel when a PO is submitted, in addition

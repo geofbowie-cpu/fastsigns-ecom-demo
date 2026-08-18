@@ -9,8 +9,9 @@ Production: <https://fastsigns-demos.vercel.app>
 
 ## Stack
 
-- Next.js 14 (App Router) — note: this version has breaking changes vs. older
+- Next.js 16 (App Router) — note: this version has breaking changes vs. older
   Next, see `AGENTS.md`
+- React 19
 - Supabase (Postgres + Auth + Storage) — project `ctqyjwotffoclbhymyos`
   ("ecom-demo"). **This is a separate project from the DAM
   (`icbgcexnpuuoyagsetbn`).**
@@ -47,10 +48,15 @@ Two surfaces in one Next.js app:
 | `/:slug/products/[productSlug]`  | Prospect           | Product detail                             |
 | `/:slug/cart`                    | Prospect           | Cart review + submit (when cart enabled)   |
 | `/master/orders`                 | FASTSIGNS internal | Purchase orders + email delivery status    |
+| `/master/analytics`              | FASTSIGNS internal | Traffic, engagement + popup stats per site |
 
 URL rewrites in `next.config.ts` map `/:slug` → `/sites/:slug` so prospects
 get clean shareable URLs. Storefront pages render one of two designs per the
 `tenants.theme` flag (`legacy` | `v2`).
+
+Three behaviours are opt-in per site, all off by default: ordering /
+purchase orders (`tenants.enable_cart`), the marketing popup
+(`tenants.popup`), and login gating (`tenants.allowed_domains`).
 
 ## Auth
 
@@ -97,4 +103,4 @@ configured as a proper project domain (not just an alias).
 - `CLAUDE.md` — architecture notes for Claude / future-agent sessions
 - `USER_GUIDE.md` — how to use the demo builder (sales/account team)
 - `FUTURE.md` — planned features and known issues
-- `AGENTS.md` — Next.js 14 caveats
+- `AGENTS.md` — Next.js version caveats
