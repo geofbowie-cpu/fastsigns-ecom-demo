@@ -20,6 +20,7 @@ export const TenantPopupSchema = z.object({
   enabled: z.boolean(),
   mode: z.enum(["embed", "modal"]),
   embedCode: z.string().max(20000),
+  embedFramed: z.boolean(),
   heading: z.string().max(160),
   body: z.string().max(1000),
   imageUrl: z.string().max(2000),

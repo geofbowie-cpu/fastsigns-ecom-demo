@@ -148,7 +148,9 @@ or removed instead of being a permanent flat composite.
   snap, and editable/removable placements. SVG logos rasterized via Sharp.
 - **Marketing popup** — opt-in per site (`tenants.popup.enabled`), edited in the
   edit form's "Popup" section. Two modes: `embed` (paste a HubSpot-style
-  snippet, injected verbatim — their script draws its own overlay) or `modal`
+  snippet, injected verbatim; `embedFramed` — default true — wraps it in our own
+  overlay, since a HubSpot *form* embed renders inline and would otherwise land
+  invisibly at the foot of the page) or `modal`
   (headline / body / image / CTA button rendered by `PopupModal` in the site's
   brand colors). Trigger is `load` | `delay` | `scroll` | `exit`; a
   `frequencyDays` cooldown is kept in `localStorage`. Fires `popup_shown`,
@@ -192,6 +194,11 @@ or removed instead of being a permanent flat composite.
   every line against `products.min_order_qty`/`order_increment` via
   `lib/order-qty.ts` — client checks are not authoritative.
 - **`enable_cart` defaults false; never enable Reddy Ice** (live marketing).
+- **A HubSpot form embed is not a popup.** It renders inline wherever the div
+  lands, so `embedFramed` defaults to true and `PopupModal` supplies the overlay
+  via its `children` branch. Only turn framing off for a snippet that positions
+  itself (a pop-up CTA, a tag manager). HubSpot sizes its iframe by postMessage
+  a beat after insert — a `height: 0px` reading right after injection is normal.
 - **Popup embed code runs verbatim on the tenant site.** It's a master-admin-only
   field, so it's length-bounded but deliberately not sanitised — pasting a hostile
   snippet is equivalent to owning the page. `innerHTML` doesn't execute `<script>`,

@@ -5,6 +5,10 @@ import type { TenantPopup } from "@/lib/popup"
 
 // Presentational marketing modal. No triggering, no storage, no tracking —
 // SitePopup owns that, and the admin preview reuses this as-is.
+//
+// With `children` it becomes a bare frame (backdrop, close button, Escape,
+// scroll lock) around whatever is passed in — that's how a pasted embed gets
+// popup chrome it doesn't bring itself.
 export default function PopupModal({
   popup,
   ctaHref,
@@ -14,6 +18,8 @@ export default function PopupModal({
   onCta,
   /** Preview mode renders inside the admin card instead of over the page. */
   inline,
+  /** Replaces the content block — used to frame a pasted embed. */
+  children,
 }: {
   popup: TenantPopup
   ctaHref: string
@@ -22,6 +28,7 @@ export default function PopupModal({
   onClose: (how: string) => void
   onCta?: () => void
   inline?: boolean
+  children?: React.ReactNode
 }) {
   const closeRef = useRef<HTMLButtonElement>(null)
 
@@ -48,9 +55,9 @@ export default function PopupModal({
       aria-modal={inline ? undefined : true}
       aria-label={popup.heading || "Offer"}
       onClick={(e) => e.stopPropagation()}
-      className={`relative w-full max-w-md overflow-hidden rounded-2xl bg-white text-left shadow-2xl ${
-        inline ? "" : "animate-[fadeIn_.15s_ease-out]"
-      }`}
+      className={`relative w-full overflow-hidden rounded-2xl bg-white text-left shadow-2xl ${
+        children ? "max-w-lg" : "max-w-md"
+      } ${inline ? "" : "animate-[fadeIn_.15s_ease-out]"}`}
     >
       <button
         ref={closeRef}
@@ -62,6 +69,11 @@ export default function PopupModal({
         ✕
       </button>
 
+      {children ? (
+        // A long embedded form must stay reachable on short screens.
+        <div className="max-h-[85vh] overflow-y-auto p-6 pt-10">{children}</div>
+      ) : (
+        <>
       {popup.imageUrl.trim() && (
         // Third-party/CDN art of unknown dimensions — plain <img> avoids
         // next/image remote-pattern config for every prospect's image host.
@@ -101,6 +113,8 @@ export default function PopupModal({
           </button>
         )}
       </div>
+        </>
+      )}
     </div>
   )
 

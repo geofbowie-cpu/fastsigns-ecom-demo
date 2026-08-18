@@ -144,10 +144,14 @@ section and pick one of two modes:
   picks up the site's brand colors. Use **Preview popup** to see it without
   saving.
 - **Pasted code** — paste the embed snippet from HubSpot (or whatever tool the
-  campaign uses) and we drop it onto every page of the site; the snippet draws
-  its own popup, so the content fields above don't apply. Only paste code from a
-  source you trust — it runs as-is on the live site. Pasted code can't be
-  previewed in the admin; save, then open the site to check it.
+  campaign uses) and we show it in a popup frame on every page of the site, so
+  the content fields above don't apply. A normal HubSpot **form** embed works
+  here: leave **Show in a frame** on and we draw the popup around it. Turn that
+  off only if your snippet already makes its own popup (a HubSpot pop-up CTA,
+  for instance) — otherwise the form renders down at the foot of the page and
+  looks like nothing happened. Only paste code from a source you trust — it runs
+  as-is on the live site. Pasted code can't be previewed in the admin; save,
+  then open the site to check it.
 
 Then choose the behaviour:
 

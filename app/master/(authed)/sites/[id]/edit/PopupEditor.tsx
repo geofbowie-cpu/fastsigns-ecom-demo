@@ -17,7 +17,7 @@ const MODES: { value: PopupMode; label: string; hint: string }[] = [
   {
     value: "embed",
     label: "Pasted code",
-    hint: "Paste a HubSpot (or other) popup snippet. Their script draws its own overlay — the content fields below don't apply.",
+    hint: "Paste a HubSpot (or other) snippet — a form embed works. We show it in a popup frame, so the content fields below don't apply.",
   },
 ]
 
@@ -107,6 +107,35 @@ export default function PopupEditor({
                   className={`${inputCls} font-mono text-[11px] leading-relaxed`}
                 />
               </Row>
+              <Row label="Show in a frame">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={value.embedFramed}
+                    onClick={() => set("embedFramed", !value.embedFramed)}
+                    className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
+                      value.embedFramed ? "bg-blue-600" : "bg-gray-300"
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+                        value.embedFramed ? "translate-x-4" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                  <span className="text-xs text-gray-500">
+                    {value.embedFramed
+                      ? "On — we draw the popup around your code"
+                      : "Off — your code positions itself"}
+                  </span>
+                </div>
+              </Row>
+              <p className="text-[11px] leading-relaxed text-gray-500">
+                Leave this <strong>on</strong> for a normal HubSpot form embed — on its own it
+                renders inline at the foot of the page, which looks like nothing happened. Turn it
+                off only for a snippet that already draws its own overlay, like a HubSpot pop-up CTA.
+              </p>
               <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
                 <strong>This runs as-is on the live site.</strong> Only paste code from a source you
                 trust (HubSpot, your own tag manager) — it can read and change anything on the page.

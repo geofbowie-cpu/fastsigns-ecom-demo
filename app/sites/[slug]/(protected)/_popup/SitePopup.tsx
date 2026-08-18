@@ -151,8 +151,16 @@ export default function SitePopup({
   if (!popup.enabled || !open) return null
 
   if (popup.mode === "embed") {
-    // The pasted snippet positions itself; this is just a mount point.
-    return <div ref={embedRef} data-site-popup="embed" />
+    const mount = <div ref={embedRef} data-site-popup="embed" />
+    // Most snippets (HubSpot form embeds especially) render inline wherever
+    // they land, so frame them ourselves. Un-framed is for snippets that
+    // position themselves.
+    if (!popup.embedFramed) return mount
+    return (
+      <PopupModal popup={popup} ctaHref="" onClose={close}>
+        {mount}
+      </PopupModal>
+    )
   }
 
   if (!popup.heading.trim()) return null

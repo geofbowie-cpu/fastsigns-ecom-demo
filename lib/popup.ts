@@ -1,8 +1,11 @@
 // Per-site marketing popup config (tenants.popup jsonb).
 //
 // Two modes:
-//   "embed" — paste a HubSpot (or any) snippet; we inject it and their script
-//             draws its own overlay. Arbitrary JS, master-admin-only field.
+//   "embed" — paste a HubSpot (or any) snippet. Most snippets (HubSpot *form*
+//             embeds especially) render inline wherever they're dropped, so by
+//             default we frame them in our own overlay; embedFramed=false is
+//             for snippets that position themselves (pop-up CTAs, full tag
+//             managers). Arbitrary JS, master-admin-only field.
 //   "modal" — we render the overlay ourselves from these fields.
 //
 // Shared by the admin editor, the storefront component, and the preview.
@@ -15,6 +18,8 @@ export type TenantPopup = {
   mode: PopupMode
   /** Raw HTML/script for mode "embed". */
   embedCode: string
+  /** Render the embed inside our modal frame. False = the snippet positions itself. */
+  embedFramed: boolean
   // ── mode "modal" content ──
   heading: string
   body: string
@@ -35,6 +40,7 @@ export const DEFAULT_POPUP: TenantPopup = {
   enabled: false,
   mode: "modal",
   embedCode: "",
+  embedFramed: true,
   heading: "",
   body: "",
   imageUrl: "",
@@ -71,6 +77,9 @@ export function resolvePopup(raw: unknown): TenantPopup {
     enabled: p.enabled === true,
     mode,
     embedCode: str(p.embedCode, ""),
+    // Default true: an un-framed inline embed renders at the foot of the page
+    // and looks like nothing happened.
+    embedFramed: p.embedFramed !== false,
     heading: str(p.heading, ""),
     body: str(p.body, ""),
     imageUrl: str(p.imageUrl, ""),
