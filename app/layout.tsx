@@ -3,11 +3,40 @@ import Script from "next/script"
 import "./globals.css"
 import { Providers } from "./providers"
 import { ConditionalShell } from "./ConditionalShell"
-import { brand } from "@/brand.config"
+
+const FALLBACK_SITE_URL = "https://fastsigns-demos.vercel.app"
+
+// Runs at module scope: a blank or malformed SITE_URL must not be allowed to
+// throw out of new URL(), or every page in the app 500s.
+const SITE_URL = (() => {
+  const raw = process.env.SITE_URL?.trim()
+  if (!raw) return FALLBACK_SITE_URL
+  try {
+    return new URL(raw).origin
+  } catch {
+    return FALLBACK_SITE_URL
+  }
+})()
+const APP_NAME = "FASTSIGNS Demo Builder"
+const APP_DESC =
+  "Build branded prospect storefront demos — logo, colors, and a curated catalog, live in minutes."
 
 export const metadata: Metadata = {
-  title: `${brand.company} — Enterprise Signage Store`,
-  description: brand.heroSubheading,
+  metadataBase: new URL(SITE_URL),
+  title: APP_NAME,
+  description: APP_DESC,
+  openGraph: {
+    type: "website",
+    siteName: APP_NAME,
+    title: APP_NAME,
+    description: APP_DESC,
+    url: SITE_URL,
+  },
+  twitter: {
+    card: "summary",
+    title: APP_NAME,
+    description: APP_DESC,
+  },
 }
 
 const GTM_ID = "GTM-NFMTDM7P"

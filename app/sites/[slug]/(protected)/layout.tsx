@@ -20,9 +20,29 @@ export async function generateMetadata({
   const tenant = await getTenantBySlug(slug)
   if (!tenant) return { title: "Storefront" }
   const b = resolveBrand(tenant.brand)
+  const title = `${b.company} — Storefront`
+  // Logo doubles as the link-preview image. SVG is skipped: Slack and most
+  // unfurlers will not render it.
+  const ogImage =
+    b.logoImage && !b.logoImage.toLowerCase().endsWith(".svg")
+      ? b.logoImage
+      : undefined
   return {
-    title: `${b.company} — Storefront`,
+    title,
     description: b.heroSubheading,
+    openGraph: {
+      type: "website",
+      siteName: b.company,
+      title,
+      description: b.heroSubheading,
+      ...(ogImage ? { images: [{ url: ogImage }] } : {}),
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description: b.heroSubheading,
+      ...(ogImage ? { images: [ogImage] } : {}),
+    },
   }
 }
 
