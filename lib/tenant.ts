@@ -1,5 +1,6 @@
 // Tenant data model + server-side fetchers.
-// `brand` is a flexible jsonb blob that mirrors brand.config.ts shape.
+// `brand` is a flexible jsonb blob; see resolveBrand() in lib/resolve-brand.ts
+// for the shape and the per-field defaults.
 
 import { adminClient, publicClient } from "@/lib/supabase"
 import type { ProductOverrides } from "@/lib/product-bank"

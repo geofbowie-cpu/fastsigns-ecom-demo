@@ -1,8 +1,6 @@
 import type { Metadata } from "next"
 import Script from "next/script"
 import "./globals.css"
-import { Providers } from "./providers"
-import { ConditionalShell } from "./ConditionalShell"
 
 const FALLBACK_SITE_URL = "https://fastsigns-demos.vercel.app"
 
@@ -66,9 +64,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           />
         </noscript>
         {/* End Google Tag Manager (noscript) */}
-        <Providers>
-          <ConditionalShell>{children}</ConditionalShell>
-        </Providers>
+        {children}
       </body>
     </html>
   )
